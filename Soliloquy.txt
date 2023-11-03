@@ -1,0 +1,4 @@
+I like talking to myself and pretending there's more than one me. This file will be used to jot down our thoughts throughout the project. Without further ado,
+
+Phase 1: OAS
+To write the OAS, one must first understand what's to be done.
