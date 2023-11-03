@@ -4,3 +4,30 @@ Phase 1: OAS
 To write the OAS, one must first understand what's to be done. List out the resources, and for each, the possible methods.
 While you want to do something to indicate that there's a thread, a stream of images, that kind of thing may not be handled here. In short, 
 we really might just be dealing with resources, their methods, and nothing more.
+No, given the opIDs, Stream is actually a resource, or rather a collection of resources. Necessary opIDs:
+• doLogin (see simplified login) // already done
+• setMyUserName
+• uploadPhoto
+• followUser
+• unfollowUser
+• banUser
+• unbanUser
+• getUserProfile
+• getMyStream
+• likePhoto
+• unlikePhoto
+• commentPhoto
+• uncommentPhoto
+• deletePhoto
+
+Resources:
+- /users
+- /users/{userid}
+- /users/{userid}/stream
+# how do I handle the fact that there are photos both on the stream and on users' profile?
+# photos originally belong to users, and I want to feed those to stream, but then which resource do 
+# I use? A list of followed. I GET from them. 
+- /users/{userid}/photos
+- /users/{userid}/photos/{photoid}
+- /users/{userid}/follows
+- /users/{userid}/banlist
