@@ -1,4 +1,6 @@
 I like talking to myself and pretending there's more than one me. This file will be used to jot down our thoughts throughout the project. Without further ado,
 
 Phase 1: OAS
-To write the OAS, one must first understand what's to be done.
+To write the OAS, one must first understand what's to be done. List out the resources, and for each, the possible methods.
+While you want to do something to indicate that there's a thread, a stream of images, that kind of thing may not be handled here. In short, 
+we really might just be dealing with resources, their methods, and nothing more.
