@@ -26,7 +26,8 @@ Resources:
 - /users/{userid}/stream
 # how do I handle the fact that there are photos both on the stream and on users' profile?
 # photos originally belong to users, and I want to feed those to stream, but then which resource do 
-# I use? A list of followed. I GET from them. 
+# I use? A list of followed. I GET from them. We'll need to expand on this, the idea is still ambiguous.
+- /users/{userid}/profile
 - /users/{userid}/photos
 - /users/{userid}/photos/{photoid}
 - /users/{userid}/follows
