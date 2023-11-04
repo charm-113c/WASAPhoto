@@ -1,0 +1,36 @@
+# Defining User, UserProfile, Photo, possibly Stream
+components:
+  schemas:
+    User:
+      type: object
+      properties: 
+        username:
+          type: string
+          example: Sir Wilburt Coddington III
+          # refraining from adding properties like full name, DoB etc for now, may add in the future
+        profile:
+          $ref '#/components/schemas/UserProfile'
+          
+    UserProfile:
+      type: object
+      properties:
+        username:
+          type: string
+          example: Sir Wilburt Coddington III
+        nphotos:
+          type: integer
+          example: 42
+        photos:
+          type: array
+          items:
+            $ref '#/components/schemas/Photo'
+        # other properties needed will be subsequently added
+        followers:
+          type: array
+          items:
+            $ref '#/components/schemas/User'
+            # is this... allowed?
+        following:
+          type: array
+          items: 
+            $ref '#/components/schemas/User'
