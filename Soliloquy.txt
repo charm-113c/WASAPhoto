@@ -20,15 +20,61 @@ No, given the opIDs, Stream is actually a resource, or rather a collection of re
 • uncommentPhoto
 • deletePhoto
 
+Specifications: (+ indicates additional, non-required specs)
+1) Users
+  - Have their own profile they can modify
+  - Can upload photos on profile and remove them
+    - Removal implies deletion of likes and comments
+  - Can search other users
+  - Can follow/unfollow other users
+  - Have list of followed users (showed in profile)
+  - Have blacklist of users
+  - Have stream 
+2) User's Stream 
+  - Composed of photos from followed users
+  - Can be obtained
+3) Photos
+  - Can be commented on 
+    - Comments removable by authors
+  - Can be liked
+4) Session
+  - Users can login
+  + Users can logout
+
 Resources:
+- /session # hold on, is this the master path? No, only session one
 - /users
 - /users/{userid}
 - /users/{userid}/stream
+- /users/{userid}/profile
+- /users/{userid}/profile/{photoid}
+- /users/{userid}/profile/following
+- /users/{userid}/profile/followers
+- /users/{userid}/banlist
+
 # how do I handle the fact that there are photos both on the stream and on users' profile?
 # photos originally belong to users, and I want to feed those to stream, but then which resource do 
 # I use? A list of followed. I GET from them. We'll need to expand on this, the idea is still ambiguous.
-- /users/{userid}/profile
-- /users/{userid}/photos
-- /users/{userid}/photos/{photoid}
-- /users/{userid}/follows
-- /users/{userid}/banlist
+
+Solution 1: using ref. If ref allows us to make use of other users' photos within the stream, we're good. 
+In this case, we'd be referencing the path: /user/{uid}/following/{uid2}/profile
+This looks more complex than it has to be, or rather it looks too complex to be correct. Does it? Maybe you're just 
+not used to it. Could be.
+Also, what happens when a user bans another? Do we handle that here? Do we just add to the banlist collection 
+and leave it to backend?
+So many doubts, so many doubts. Let's properly study Swagger's example first.
+
+When a user follows another, the user is adding their id to the 'followers' collection of their followed user, 
+path built accordingly.
+
+
+Current progress:
+Building UserProfile component (it will be the one GETed, instead of user per se). Properties:
+  - Username
+  - Number of photos (nphotos)
+  - Uploaded photos
+  - List of following users
+  - List of followed users
+Built User component, as followed/following users will reference this. Properties:
+  - Username
+  # currently only property, should I reference profile? Actually, yes.
