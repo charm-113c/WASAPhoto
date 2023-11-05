@@ -1,6 +1,10 @@
 # WASAPhoto
+
 Repo of the WASAPhoto project for ACSAI
 http://gamificationlab.uniroma1.it/en/wasa/
+
+Full name: Randrianantoandro Andry Ambinintsoa
+Student ID: 1891313
 
 The WASAPhoto project for the WASA class of 2023-2024 consists in creating a social network that allows users to see pictures 
 of other users and upload their own. It is subdivided in of 4 homeworks, one for each phase of the development (API specification, 
