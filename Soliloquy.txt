@@ -69,12 +69,17 @@ path built accordingly.
 
 
 Current progress:
-Building UserProfile component (it will be the one GETed, instead of user per se). Properties:
+• Building UserProfile component (it will be the one GETed, instead of user per se). Properties:
   - Username
   - Number of photos (nphotos)
   - Uploaded photos
   - List of following users
   - List of followed users
-Built User component, as followed/following users will reference this. Properties:
+• Built User component, as followed/following users will reference this. Properties:
   - Username
   # currently only property, should I reference profile? Actually, yes.
+  - Profile
+• Building Photo component, it will need:
+  - Description (optional)
+  - Likes
+  - Comments
