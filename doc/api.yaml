@@ -34,3 +34,21 @@ components:
           type: array
           items: 
             $ref '#/components/schemas/User'
+    
+    Photo:
+      type: object
+      properties:
+        # the photo itself
+        photoData:
+          type: string
+          format: binary
+        likes:
+          type: integer
+          format: int64
+          minimum: 0
+        comments:
+          type: array
+          items: 
+            type: string
+          
+          
