@@ -22,14 +22,21 @@ No, given the opIDs, Stream is actually a resource, or rather a collection of re
 
 Specifications: (+ indicates additional, non-required specs)
 1) Users
-  - Have their own profile they can modify
-  - Can upload photos on profile and remove them
-    - Removal implies deletion of likes and comments
-  - Can search other users
-  - Can follow/unfollow other users
-  - Have list of followed users (showed in profile)
-  - Have blacklist of users
-  - Have stream 
+  - Have their own profile they can modify. Profile: 
+      - User's photos. User can:
+          # for individual photo resource, refer to 3)
+          - upload photo
+          - remove photo -> removes likes and comments
+      - Number of photos
+      - User's followers
+      - User's following
+          - User can search other users by u_name
+          - Can follow other users -> add photos to Stream
+          - Can unfollow other users -> remove photos from stream
+      - User may change u_name
+  - Add other users to blacklist 
+      - Blocked users cannot see blocker's profile or photos
+  - Have stream. Detailed in 2)
 2) User's Stream 
   - Composed of photos from followed users
   - Can be obtained
@@ -83,3 +90,9 @@ Current progress:
   - Description (optional)
   - Likes
   - Comments
+  - Date-time
+
+Change: we're taking things very seriously. Adding all sort of things a real social network 
+would have. Spare no efforts, underestimate nothing. Let's go.
+
+Will add session login + logout
