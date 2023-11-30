@@ -63,16 +63,14 @@ Tag: Session
       opID: doLogout 
 
 Tag: U2U 
-• /users/{u_name}/profile/following:
-    - PUT u_name2 in follows (u_name2 in body)
-      opID: followUser
 • /users/{u_name}/profile/following/{u_name2}:
+    - PUT u_name2 in follows 
+      opID: followUser
     - DELETE a followed user (unfollow)
       opID: unfollowUser
-• /users/{u_name}/blacklist:
+• /users/{u_name}/blacklist/{u_name2}:
     - PUT u_name2 in blacklist
       opID: banUser
-• /users/{u_name}/blacklist/{u_name2}:
     - DELETE u_name2 from blacklist
       opID: unbanUser
 
@@ -81,7 +79,7 @@ Tag: User actions
     - PUT a name (change or set own u_name)
       opID: setMyUserName
 • /users/{u_name}/profile:
-    - GET a u_name to search a user' profile 
+    - GET a u_name to search a user's profile 
       opID: getUserProfile 
 • /users/{u_name}/profile/followers:
     + GET list of followers
@@ -95,14 +93,13 @@ Tag: User actions
     + POST, add 1 to n_photos when new photo is uploaded
       opID: incrementNphotos
 
-Tag: Own photos
-• /users/{u_name}/profile/photos:
+Tag: Own Photos
+• /users/{u_name}/profile/photos/{photo_id}:
     - POST a photo on own profile
       opID: uploadPhoto
-• /users/{u_name}/profile/photos/{photo_id}:
     - DELETE specified photo
       opID: deletePhoto
-    *NOTE: removal of comments and likes necessary -> opIDs unlikePhoto and uncommentPhoto
+      *NOTE: removal of comments and likes necessary -> opIDs unlikePhoto and uncommentPhoto
 
 Tag: Stream
 • /users/{u_name}/Stream:
@@ -110,16 +107,15 @@ Tag: Stream
     opID: GetMyStream
   *NOTE: this operation requires opID getFollowing as a prerequisite
 
-Tag: Photos
+Tag: All Photos
 • /photos/{photo_id}/likes/{u_name}:
   - PUT a like on given photo
     opID: likePhoto
   - DELETE a like, i.e. unlike
     opID: unlikePhoto
-• /photos/{photo_id}/comments/{u_name}:
+• /photos/{photo_id}/comments/{u_name}/{comment_id}:
   - POST a comment
     opID: commentPhoto
-• /photos/{photo_id}/comments/{u_name}/{comment_id}:
   - DELETE a comment
     opID: uncommentPhoto
 
