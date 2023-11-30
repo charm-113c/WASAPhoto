@@ -4,25 +4,27 @@ Phase 1: OAS
 To write the OAS, one must first understand what's to be done. List out the resources, and for each, the possible methods.
 While you want to do something to indicate that there's a thread, a stream of images, that kind of thing may not be handled here. In short, 
 we really might just be dealing with resources, their methods, and nothing more.
-No, given the opIDs, Stream is actually a resource, or rather a collection of resources. Necessary opIDs:
-• doLogin (see simplified login) // already done
-• setMyUserName
-• uploadPhoto
-• followUser
-• unfollowUser
-• banUser
-• unbanUser
-• getUserProfile
-• getMyStream
-• likePhoto
-• unlikePhoto
-• commentPhoto
-• uncommentPhoto
-• deletePhoto
+No, given the opIDs, Stream is actually a resource, or rather a collection of resources. 
+Necessary opIDs:
+• doLogin (see simplified login) DONE
+• setMyUserName DONE
+• uploadPhoto DONE
+• followUser DONE
+• unfollowUser DONE
+• banUser DONE
+• unbanUser DONE
+• getUserProfile DONE
+• getMyStream DONE
+• likePhoto DONE
+• unlikePhoto DONE 
+• commentPhoto DONE
+• uncommentPhoto DONE
+• deletePhoto DONE
 
-Specifications: (+ indicates additional, non-required specs)
+Specifications: 
 1) Users
-  - Have their own profile they can modify. Profile: 
+  a. Have their own profile they can modify. Profile: 
+      - Contains general information
       - User's photos. User can:
           # for individual photo resource, refer to 3)
           - upload photo
@@ -33,66 +35,91 @@ Specifications: (+ indicates additional, non-required specs)
           - User can search other users by u_name
           - Can follow other users -> add photos to Stream
           - Can unfollow other users -> remove photos from stream
-      - User may change u_name
-  - Add other users to blacklist 
-      - Blocked users cannot see blocker's profile or photos
-  - Have stream. Detailed in 2)
+  b. Add/remove other users to blacklist (ban/unban)
+      - Banned users cannot see banning user's profile or photos
+  c. May change name
+  d. Have a stream. Detailed in 2)
 2) User's Stream 
-  - Composed of photos from followed users
-  - Can be obtained
+  a. Composed of photos from followed users
+  b. Can be GETed 
 3) Photos
-  - Can be commented on 
+  a. Have date + description (not necessary)
+  b. Can be commented on by all except banned users
     - Comments removable by authors
-  - Can be liked
+  c. Can be liked/unliked
 4) Session
-  - Users can login
-  + Users can logout
-
-Resources:
-- /session # hold on, is this the master path? No, only session one
-- /users
-- /users/{userid}
-- /users/{userid}/stream
-- /users/{userid}/profile
-- /users/{userid}/profile/{photoid}
-- /users/{userid}/profile/following
-- /users/{userid}/profile/followers
-- /users/{userid}/banlist
-
-# how do I handle the fact that there are photos both on the stream and on users' profile?
-# photos originally belong to users, and I want to feed those to stream, but then which resource do 
-# I use? A list of followed. I GET from them. We'll need to expand on this, the idea is still ambiguous.
-
-Solution 1: using ref. If ref allows us to make use of other users' photos within the stream, we're good. 
-In this case, we'd be referencing the path: /user/{uid}/following/{uid2}/profile
-This looks more complex than it has to be, or rather it looks too complex to be correct. Does it? Maybe you're just 
-not used to it. Could be.
-Also, what happens when a user bans another? Do we handle that here? Do we just add to the banlist collection 
-and leave it to backend?
-So many doubts, so many doubts. Let's properly study Swagger's example first.
-
-When a user follows another, the user is adding their id to the 'followers' collection of their followed user, 
-path built accordingly.
+  a. Users can login
+  b. Users can logout
 
 
-Current progress:
-• Building UserProfile component (it will be the one GETed, instead of user per se). Properties:
-  - Username
-  - Number of photos (nphotos)
-  - Uploaded photos
-  - List of following users
-  - List of followed users
-• Built User component, as followed/following users will reference this. Properties:
-  - Username
-  # currently only property, should I reference profile? Actually, yes.
-  - Profile
-• Building Photo component, it will need:
-  - Description (optional)
-  - Likes
-  - Comments
-  - Date-time
+Resources: (+ indicates non-mandatory operations)
 
-Change: we're taking things very seriously. Adding all sort of things a real social network 
-would have. Spare no efforts, underestimate nothing. Let's go.
+Tag: Session
+• /session/login:
+    - POST a u_name to login or create user if not registered (see template)
+      opID: doLogin
+• /session/logout:
+    + POST a request to logout
+      opID: doLogout 
 
-Will add session login + logout
+Tag: U2U 
+• /users/{u_name}/profile/following:
+    - PUT u_name2 in follows (u_name2 in body)
+      opID: followUser
+• /users/{u_name}/profile/following/{u_name2}:
+    - DELETE a followed user (unfollow)
+      opID: unfollowUser
+• /users/{u_name}/blacklist:
+    - PUT u_name2 in blacklist
+      opID: banUser
+• /users/{u_name}/blacklist/{u_name2}:
+    - DELETE u_name2 from blacklist
+      opID: unbanUser
+
+Tag: User actions
+• /users/{u_name}/name:
+    - PUT a name (change or set own u_name)
+      opID: setMyUserName
+• /users/{u_name}/profile:
+    - GET a u_name to search a user' profile 
+      opID: getUserProfile 
+• /users/{u_name}/profile/followers:
+    + GET list of followers
+      opID: getFollowers
+• /users/{u_name}/profile/following:
+    + GET list of followed users (also needed for getMyStream)
+      opID: getFollowing
+• /users/{u_name}/profile/n_photos:
+    + GET number of photos of user
+      opID: getNphotos
+    + POST, add 1 to n_photos when new photo is uploaded
+      opID: incrementNphotos
+
+Tag: Own photos
+• /users/{u_name}/profile/photos:
+    - POST a photo on own profile
+      opID: uploadPhoto
+• /users/{u_name}/profile/photos/{photo_id}:
+    - DELETE specified photo
+      opID: deletePhoto
+    *NOTE: removal of comments and likes necessary -> opIDs unlikePhoto and uncommentPhoto
+
+Tag: Stream
+• /users/{u_name}/Stream:
+  - GET user's stream
+    opID: GetMyStream
+  *NOTE: this operation requires opID getFollowing as a prerequisite
+
+Tag: Photos
+• /photos/{photo_id}/likes/{u_name}:
+  - PUT a like on given photo
+    opID: likePhoto
+  - DELETE a like, i.e. unlike
+    opID: unlikePhoto
+• /photos/{photo_id}/comments/{u_name}:
+  - POST a comment
+    opID: commentPhoto
+• /photos/{photo_id}/comments/{u_name}/{comment_id}:
+  - DELETE a comment
+    opID: uncommentPhoto
+
