@@ -1,39 +1,40 @@
-# Defining User, UserProfile, Photo, possibly Stream
+# Defining User, UserProfile, Photo, and possibly Stream, Likes and Comments
 components:
   schemas:
+  
     User:
+      required: 
+        - username
       type: object
       properties: 
         username:
           type: string
           example: Sir Wilburt Coddington III
-          # refraining from adding properties like full name, DoB etc for now, may add in the future
+          pattern: 'ˆ.*?$'
+          minLength: 3
+        # refraining from adding properties like full name, DoB etc for now, may add in the future
         profile:
-          $ref '#/components/schemas/UserProfile'
+          $ref: '#/components/schemas/UserProfile'
           
     UserProfile:
       type: object
       properties:
-        username:
-          type: string
-          example: Sir Wilburt Coddington III
         nphotos:
           type: integer
           example: 42
         photos:
           type: array
           items:
-            $ref '#/components/schemas/Photo'
+            $ref: '#/components/schemas/Photo'
         # other properties needed will be subsequently added
         followers:
           type: array
           items:
-            $ref '#/components/schemas/User'
-            # is this... allowed?
+            $ref: '#/components/schemas/User'
         following:
           type: array
           items: 
-            $ref '#/components/schemas/User'
+            $ref: '#/components/schemas/User'
     
     Photo:
       type: object
@@ -42,6 +43,8 @@ components:
         photoData:
           type: string
           format: binary
+        # other data
+        ########### May change: we may have these be components altogether
         likes:
           type: integer
           format: int64
@@ -50,5 +53,176 @@ components:
           type: array
           items: 
             type: string
+        date:
+          type: string
+          format: date-time
+          
+  securitySchemes:
+    identifier:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      
+# The following would apply security globally. Let's do it method by method instead     
+# security:
+#   - identifier: []
+# actually, seems like it'll need to be global. No, it doesn't make sense with login. Shame.
+          
+          
+###################################################
+
+
+
+
+openapi: 3.0.3
+info:
+  title: WASAPhoto
+  description: | 
+    Keep in touch with your friends by sharing photos of special moments, thanks to WASAPhoto! You can upload your photos directly from your PC, and they will be visible to everyone following you.
+  
+  version: 1.0.0
+paths:
+  /login:
+    post:
+      tags: ["Session"]
+      summary: Logs in the user
+      description: |      
+        If the user does not exist, it will be created, and an identifier is returned. If the user exists, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+              
+        required: true
+      responses:
+        '201':
+          description: User log-in action successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  identifier:
+                    # change here if you decide to use an integer
+                    # or any other type of identifier
+                    type: string
+                    example: "abcdef012345"
+                      
+  /logout:
+    post:
+      tags: ["Session"]
+      summary: Logs out the user
+      description: |
+        Logs out the user and invalidates the identifier (token) associated to them.
+      operationId: doLogout
+      requestBody:
+        content:
+          application/json: {}
+        required: False
+      responses:
+        "200":
+          description: Logout successful
+      security:
+        - identifier: []
+        # instead of sending identifier in request body, have it in the header by specifying necessary security
+          
+          
+  /users/{username}:
+    put:
+      tags: ["User actions"]
+      summary: Changes user's name
+      description: Change current username
+      operationId: setMyUserName
+      parameters:
+        - name: username
+          in: path
+          description: User's new name
+          required: True
+          schema:
+            $ref: "#/components/schemas/User/properties/username"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: New username set
+          # Note: it may be the same as old one, not counted as error
+      security:
+        - identifier: []
+        
+  /users/{username}/profile:
+    get:
+      tags: ["User actions", "U2U"]
+      summary: Search given user
+      description: Get the profile of given user
+      operationId: getUserProfile
+      parameters:
+        - name: username
+          in: path
+          description: Searched user's username
+          required: True
+          schema:
+            # specifies wanted format to client, instead of generic 'string' type
+            $ref: "#/components/schemas/User/properties/username"
+      responses:
+        "200":
+          description: Searched user's profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User/properties/profile"
+        "400":
+          description: Invalid username
+        "404":
+          description: User not found
+      security:
+        - identifier: []
+        
+  /users/{username}/profile/followers:
+    get:
+      tags: ["User actions"]
+      summary: Get list of user's followers
+      operationId: getFollowers
+      parameters:
+        - name: username
+          in: path
+          description: Username
+          required: True
+          schema:
+            $ref: "#/components/schemas/User/properties/username"
+      responses:
+        "200":
+          description: List of usernames of user's followers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User/properties/username"
+        "400":
+          description: Invalid username
+        "404":
+          description: User not found
+        
+          
+                  
+         
+        
+  # /users/{username}/profile/following/{u_name2}:
+  #   put:
+  #     tags: ["U2U"]
+  #     summary: Follow u_name2
+  #     description: Add u_name2 to the collection of users that u_name is following
+  #     operationId: followUser
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           ...
+          
           
           
