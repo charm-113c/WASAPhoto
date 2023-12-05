@@ -55,10 +55,10 @@ Specifications:
 Resources: (+ indicates non-mandatory operations)
 
 Tag: Session
-• /session/login:
+• /session/login: DONE
     - POST a u_name to login or create user if not registered (see template)
       opID: doLogin
-• /session/logout:
+• /session/logout: DONE
     + POST a request to logout
       opID: doLogout 
 
@@ -75,10 +75,10 @@ Tag: U2U
       opID: unbanUser
 
 Tag: User actions
-• /users/{u_name}/name:
+• /users/{u_name}: DONE
     - PUT a name (change or set own u_name)
       opID: setMyUserName
-• /users/{u_name}/profile:
+• /users/{u_name}/profile: DONE
     - GET a u_name to search a user's profile 
       opID: getUserProfile 
 • /users/{u_name}/profile/followers:
@@ -119,3 +119,6 @@ Tag: All Photos
   - DELETE a comment
     opID: uncommentPhoto
 
+
+Session methods implemented, slight changes compared to above.
+Implemented User action methods.
