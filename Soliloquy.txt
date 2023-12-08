@@ -81,10 +81,10 @@ Tag: User actions
 • /users/{u_name}/profile: DONE
     - GET a u_name to search a user's profile 
       opID: getUserProfile 
-• /users/{u_name}/profile/followers:
+• /users/{u_name}/profile/followers: DONE
     + GET list of followers
       opID: getFollowers
-• /users/{u_name}/profile/following:
+• /users/{u_name}/profile/following: DONE 
     + GET list of followed users (also needed for getMyStream)
       opID: getFollowing
 • /users/{u_name}/profile/n_photos:
@@ -103,7 +103,7 @@ Tag: Own Photos
 
 Tag: Stream
 • /users/{u_name}/Stream:
-  - GET user's stream
+  - GET user's stream, i.e. collection of photos
     opID: GetMyStream
   *NOTE: this operation requires opID getFollowing as a prerequisite
 
@@ -122,3 +122,10 @@ Tag: All Photos
 
 Session methods implemented, slight changes compared to above.
 Implemented User action methods.
+Set UsernameFormat as standalone component as it's used everywhere.
+opID getStream was precised, it only had a vague 'GET Stream'.
+It's in practice a GET a list of photos, which, paired with the list 
+of the user's followings (getFollowing) will result in the stream.
+
+Created 'Auxiliary' tag for methods that will serve for backend but not
+to user.
