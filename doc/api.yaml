@@ -8,13 +8,18 @@ components:
       type: object
       properties: 
         username:
-          type: string
-          example: Sir Wilburt Coddington III
-          pattern: 'ˆ.*?$'
-          minLength: 3
-        # refraining from adding properties like full name, DoB etc for now, may add in the future
+          $ref: "#/components/schemas/UsernameFormat"    
         profile:
           $ref: '#/components/schemas/UserProfile'
+        # refraining from adding properties like full name, DoB etc for now, may add in the future
+          
+    UsernameFormat:
+      type: string
+      example: Sir Wilburt Coddington III
+      pattern: 'ˆ.*?$'
+      minLength: 3
+      maxLength: 30   
+      
           
     UserProfile:
       type: object
@@ -66,12 +71,10 @@ components:
 # The following would apply security globally. Let's do it method by method instead     
 # security:
 #   - identifier: []
-# actually, seems like it'll need to be global. No, it doesn't make sense with login. Shame.
+
           
           
 ###################################################
-
-
 
 
 openapi: 3.0.3
@@ -79,7 +82,6 @@ info:
   title: WASAPhoto
   description: | 
     Keep in touch with your friends by sharing photos of special moments, thanks to WASAPhoto! You can upload your photos directly from your PC, and they will be visible to everyone following you.
-  
   version: 1.0.0
 paths:
   /login:
@@ -94,8 +96,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
-              
+              $ref: "#/components/schemas/UsernameFormat"
         required: true
       responses:
         '201':
@@ -110,6 +111,8 @@ paths:
                     # or any other type of identifier
                     type: string
                     example: "abcdef012345"
+        "400":
+          description: Invalid username
                       
   /logout:
     post:
@@ -130,45 +133,56 @@ paths:
         # instead of sending identifier in request body, have it in the header by specifying necessary security
           
           
-  /users/{username}:
+  /users/{uID}/username:
     put:
       tags: ["User actions"]
       summary: Changes user's name
       description: Change current username
       operationId: setMyUserName
       parameters:
-        - name: username
+        - name: uID
           in: path
-          description: User's new name
+          description: Current user's id
           required: True
           schema:
-            $ref: "#/components/schemas/User/properties/username"
+            type: string
+            example: "abcdef012345"
       requestBody:
+        description: New username
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              $ref: "#/components/schemas/UsernameFormat"
       responses:
         "200":
           description: New username set
           # Note: it may be the same as old one, not counted as error
+        "400":
+          description: Invalid username format
+        "401":
+          description: Operation unauthorised, identifier missing or invalid
+        "404":
+          description: User not found
+      # as we're modifying current user's data, we need to ensure client and {username} correspond, so we need the identifier
       security:
         - identifier: []
         
-  /users/{username}/profile:
+  /users/{uName_or_uID}/profile:
     get:
       tags: ["User actions", "U2U"]
       summary: Search given user
       description: Get the profile of given user
       operationId: getUserProfile
       parameters:
-        - name: username
+        - name: uName_or_uID
+          # allow input to be either name or id
           in: path
-          description: Searched user's username
+          description: Searched user's username/id
           required: True
           schema:
-            # specifies wanted format to client, instead of generic 'string' type
-            $ref: "#/components/schemas/User/properties/username"
+            anyOf:
+              - $ref: "#/components/schemas/UsernameFormat"
+              - type: string
       responses:
         "200":
           description: Searched user's profile
@@ -176,53 +190,193 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User/properties/profile"
-        "400":
-          description: Invalid username
+        # "400":
+        #   description: Invalid username
+        # Originally, search was by username, but with id lacking strict format, 400 was dropped, leaving only 404
         "404":
           description: User not found
-      security:
-        - identifier: []
-        
-  /users/{username}/profile/followers:
+      # and here, since we are just retrieving public data, security is not required 
+  
+  # get followers 
+  /users/{uName_or_uID}/profile/followers:
+    parameters:
+    - name: uName_or_uID
+      in: path
+      description: Target user's username or id
+      required: True
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/UsernameFormat"
+          - type: string
     get:
       tags: ["User actions"]
       summary: Get list of user's followers
       operationId: getFollowers
-      parameters:
-        - name: username
-          in: path
-          description: Username
-          required: True
-          schema:
-            $ref: "#/components/schemas/User/properties/username"
       responses:
         "200":
-          description: List of usernames of user's followers
+          description: List of profiles of user's followers
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User/properties/username"
-        "400":
-          description: Invalid username
+                $ref: "#/components/schemas/UserProfile/properties/followers"
         "404":
           description: User not found
-        
           
-                  
-         
-        
-  # /users/{username}/profile/following/{u_name2}:
-  #   put:
-  #     tags: ["U2U"]
-  #     summary: Follow u_name2
-  #     description: Add u_name2 to the collection of users that u_name is following
-  #     operationId: followUser
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           ...
-          
-          
+  # get following
+  /users/{uName_or_uID}/profile/following:
+    parameters:
+    - name: uName_or_uID
+      in: path
+      description: Target user's username/id
+      required: True
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/User/properties/username"
+          - type: string
+    get:
+      tags: ["User actions", "Stream"]
+      summary: Get list of user's following
+      description: It is also necessary to obtain stream -> we first obtain the list of followings, then get photos from them 
+      operationId: getFollowing
+      responses:
+        "200":
+          description: List of profiles of users that current user follows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile/properties/following"
+        "404":
+          description: User not found
+  
+  # adding/removing user to/from following
+  /users/{uName_or_uID}/profile/following/{user2}:
+    parameters:
+    - name: uName_or_uID
+      in: path
+      required: True
+      description: Current user's name or ID
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/UsernameFormat"
+          - type: string
+    - name: user2
+      in: path
+      required: True
+      description: Target user (user to unfollow)
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/UsernameFormat"
+          - type: string
+    put:
+      tags: ["U2U"]
+      summary: Follow user
+      description: Add a user to the list of followed users. In this case user in path must correspond to current user.
+      operationId: followUser
+      responses:
+        "200":
+          description: User followed
+        "401":
+          description: Operation unauthorised, identifier missing or invalid
+        "404":
+          description: User not found
+      security:
+        - identifier: []
+    delete:
+      tags: ["U2U"]
+      summary: Unfollow user
+      operationId: unfollowUser
+      responses:
+        "200":
+          description: User unfollowed
+        "401":
+          description: Operation unauthorised, identifier missing or invalid
+        "404":
+          description: User not found
+      security:
+        - identifier: []
+      
+    
+  # ban/unban user
+  /users/{uName_or_uID}/blacklist/{user2}:
+    parameters:
+    - name: uName_or_uID
+      in: path
+      description: Current user's name or ID
+      required: True
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/UsernameFormat"
+          - type: string
+    - name: user2
+      in: path
+      description: Target user's name or ID
+      required: True
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/UsernameFormat"
+          - type: string
+    put:
+      tags: ["U2U"]
+      summary: Ban designated user (add to blacklist)
+      operationId: banUser
+      responses:
+        "200":
+          description: User added to blacklist
+        "401":
+          description: Operation unauthorised, identifier invalid or missing
+        "404":
+          description: User not found
+      security:
+        - identifier: []
+    delete:
+      tags: ["U2U"]
+      summary: Unban designated user (remove from blacklist)
+      operationId: unbanUser
+      responses:
+        "200":
+          description: User removed from blacklist
+        "401":
+          description: Operation unauthorised, identifier invalid or missing
+        "404":
+          description: User not found
+      security:
+        - identifier: []
+      
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
           
