@@ -64,14 +64,14 @@ Tag: Session
 
 Tag: U2U 
 • /users/{u_name}/profile/following/{u_name2}:
-    - PUT u_name2 in follows 
+    - PUT u_name2 in follows DONE
       opID: followUser
-    - DELETE a followed user (unfollow)
+    - DELETE a followed user (unfollow) DONE
       opID: unfollowUser
 • /users/{u_name}/blacklist/{u_name2}:
-    - PUT u_name2 in blacklist
+    - PUT u_name2 in blacklist DONE
       opID: banUser
-    - DELETE u_name2 from blacklist
+    - DELETE u_name2 from blacklist DONE
       opID: unbanUser
 
 Tag: User actions
@@ -95,28 +95,28 @@ Tag: User actions
 
 Tag: Own Photos
 • /users/{u_name}/profile/photos/{photo_id}:
-    - POST a photo on own profile
+    - POST a photo on own profile DONE
       opID: uploadPhoto
-    - DELETE specified photo
+    - DELETE specified photo DONE
       opID: deletePhoto
       *NOTE: removal of comments and likes necessary -> opIDs unlikePhoto and uncommentPhoto
 
 Tag: Stream
 • /users/{u_name}/Stream:
-  - GET user's stream, i.e. collection of photos
+  - GET user's stream DONE
     opID: GetMyStream
   *NOTE: this operation requires opID getFollowing as a prerequisite
 
 Tag: All Photos
 • /photos/{photo_id}/likes/{u_name}:
-  - PUT a like on given photo
+  - PUT a like on given photo DONE
     opID: likePhoto
-  - DELETE a like, i.e. unlike
+  - DELETE a like, i.e. unlike DONE
     opID: unlikePhoto
 • /photos/{photo_id}/comments/{u_name}/{comment_id}:
-  - POST a comment
+  - POST a comment DONE
     opID: commentPhoto
-  - DELETE a comment
+  - DELETE a comment DONE
     opID: uncommentPhoto
 
 
@@ -145,3 +145,14 @@ Now we get to nphotos. It seems unecessary. The auxiliary, I mean. It's done bac
 When posting a photo, we increment nphotos in backend. Got it.
 Alright, advanced a fair bit. We'll need to rewrite the above methods once we're done,
 since our API is quite different.
+
+Multistep things can be left to the backend, and need not be specified as API operations.
+When deleting a photo, the elimination of likes and comments can be handled backend.
+Same thing for gettign a stream: backend can deal with getting user's following 
+and their photos.
+Let's keep our API simple for the user's sake, yeah? Remember, the API shows all the things,
+all the buttons that the user will be able to press. Don't have them worry over strange 
+API calls. I know you wouldn't want to. Reorganize the tags after you're done.
+
+Ok, API is finished. Since we learned along the way, it was quite different from the above,
+but all opIDs have been implemented. We can submit it and wait for feedback.
