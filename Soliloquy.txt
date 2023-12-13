@@ -1,0 +1,158 @@
+I like talking to myself and pretending there's more than one me. This file will be used to jot down our thoughts throughout the project. Without further ado,
+
+Phase 1: OAS
+To write the OAS, one must first understand what's to be done. List out the resources, and for each, the possible methods.
+While you want to do something to indicate that there's a thread, a stream of images, that kind of thing may not be handled here. In short, 
+we really might just be dealing with resources, their methods, and nothing more.
+No, given the opIDs, Stream is actually a resource, or rather a collection of resources. 
+Necessary opIDs:
+• doLogin (see simplified login) DONE
+• setMyUserName DONE
+• uploadPhoto DONE
+• followUser DONE
+• unfollowUser DONE
+• banUser DONE
+• unbanUser DONE
+• getUserProfile DONE
+• getMyStream DONE
+• likePhoto DONE
+• unlikePhoto DONE 
+• commentPhoto DONE
+• uncommentPhoto DONE
+• deletePhoto DONE
+
+Specifications: 
+1) Users
+  a. Have their own profile they can modify. Profile: 
+      - Contains general information
+      - User's photos. User can:
+          # for individual photo resource, refer to 3)
+          - upload photo
+          - remove photo -> removes likes and comments
+      - Number of photos
+      - User's followers
+      - User's following
+          - User can search other users by u_name
+          - Can follow other users -> add photos to Stream
+          - Can unfollow other users -> remove photos from stream
+  b. Add/remove other users to blacklist (ban/unban)
+      - Banned users cannot see banning user's profile or photos
+  c. May change name
+  d. Have a stream. Detailed in 2)
+2) User's Stream 
+  a. Composed of photos from followed users
+  b. Can be GETed 
+3) Photos
+  a. Have date + description (not necessary)
+  b. Can be commented on by all except banned users
+    - Comments removable by authors
+  c. Can be liked/unliked
+4) Session
+  a. Users can login
+  b. Users can logout
+
+
+Resources: (+ indicates non-mandatory operations)
+
+Tag: Session
+• /session/login: DONE
+    - POST a u_name to login or create user if not registered (see template)
+      opID: doLogin
+• /session/logout: DONE
+    + POST a request to logout
+      opID: doLogout 
+
+Tag: U2U 
+• /users/{u_name}/profile/following/{u_name2}:
+    - PUT u_name2 in follows DONE
+      opID: followUser
+    - DELETE a followed user (unfollow) DONE
+      opID: unfollowUser
+• /users/{u_name}/blacklist/{u_name2}:
+    - PUT u_name2 in blacklist DONE
+      opID: banUser
+    - DELETE u_name2 from blacklist DONE
+      opID: unbanUser
+
+Tag: User actions
+• /users/{u_name}: RESET u_name TO u_id
+    - PUT a name (change or set own u_name)
+      opID: setMyUserName
+• /users/{u_name}/profile: DONE
+    - GET a u_name to search a user's profile 
+      opID: getUserProfile 
+• /users/{u_name}/profile/followers: DONE
+    + GET list of followers
+      opID: getFollowers
+• /users/{u_name}/profile/following: DONE 
+    + GET list of followed users (also needed for getMyStream)
+      opID: getFollowing
+• /users/{u_name}/profile/n_photos: ELIMINATED
+    + GET number of photos of user
+      opID: getNphotos
+    + POST, add 1 to n_photos when new photo is uploaded
+      opID: incrementNphotos
+
+Tag: Own Photos
+• /users/{u_name}/profile/photos/{photo_id}:
+    - POST a photo on own profile DONE
+      opID: uploadPhoto
+    - DELETE specified photo DONE
+      opID: deletePhoto
+      *NOTE: removal of comments and likes necessary -> opIDs unlikePhoto and uncommentPhoto
+
+Tag: Stream
+• /users/{u_name}/Stream:
+  - GET user's stream DONE
+    opID: GetMyStream
+  *NOTE: this operation requires opID getFollowing as a prerequisite
+
+Tag: All Photos
+• /photos/{photo_id}/likes/{u_name}:
+  - PUT a like on given photo DONE
+    opID: likePhoto
+  - DELETE a like, i.e. unlike DONE
+    opID: unlikePhoto
+• /photos/{photo_id}/comments/{u_name}/{comment_id}:
+  - POST a comment DONE
+    opID: commentPhoto
+  - DELETE a comment DONE
+    opID: uncommentPhoto
+
+
+Session methods implemented, slight changes compared to above.
+Implemented User action methods.
+Set UsernameFormat as standalone component as it's used everywhere.
+opID getStream was precised, it only had a vague 'GET Stream'.
+It's in practice a GET a list of photos, which, paired with the list 
+of the user's followings (getFollowing) will result in the stream.
+
+Created 'Auxiliary' tag for methods that will serve for backend but not
+to user.
+
+Several changes made after looking at the HiLo game API. Basically, 
+following my initial instincts, being slightly less straightforward 
+with the methods. We need to rework the above. You're always so dramatic.
+No, we do not have to rework the above. Keep a cool head.
+A rework will be necessary, actually. All along we've been using 
+username as u-id. Well, we'll need to make use of the proper id provided 
+upon login.
+We're allowing search of user by both id and username. Actually, setting 
+id to be integer. This way, we can return a 400 alongside the 404, to be more 
+specific to the user. Is that necessary? No, it isn't. Let's avoid it then.
+Now we get to nphotos. It seems unecessary. The auxiliary, I mean. It's done backend.
+
+When posting a photo, we increment nphotos in backend. Got it.
+Alright, advanced a fair bit. We'll need to rewrite the above methods once we're done,
+since our API is quite different.
+
+Multistep things can be left to the backend, and need not be specified as API operations.
+When deleting a photo, the elimination of likes and comments can be handled backend.
+Same thing for gettign a stream: backend can deal with getting user's following 
+and their photos.
+Let's keep our API simple for the user's sake, yeah? Remember, the API shows all the things,
+all the buttons that the user will be able to press. Don't have them worry over strange 
+API calls. I know you wouldn't want to. Reorganize the tags after you're done.
+
+Ok, API is finished. Since we learned along the way, it was quite different from the above,
+but all opIDs have been implemented. We can submit it and wait for feedback.
