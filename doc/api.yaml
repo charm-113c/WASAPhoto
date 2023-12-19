@@ -22,7 +22,6 @@ components:
       pattern: 'ˆ.*?$'
       minLength: 3
       maxLength: 30   
-      
           
     UserProfile:
       type: object
@@ -138,7 +137,7 @@ paths:
         - identifier: []
         # instead of sending identifier in request body, have it in the header by specifying necessary security
           
-          
+  # set username        
   /users/{uID}/username:
     put:
       tags: ["General"]
@@ -167,13 +166,11 @@ paths:
           description: Invalid username format
         "401":
           description: Operation unauthorised, identifier missing or invalid
-        "404":
-          description: User not found
       # as we're modifying current user's data, we need to ensure client and {username} correspond, so we need the identifier
       security:
         - identifier: []
         
-        
+  # get user's profile      
   /users/{uName}/profile:
     get:
       tags: ["General"]
@@ -203,53 +200,6 @@ paths:
           description: User not found
       # and here, since we are just retrieving public data, security is not required 
   
-  # get followers 
-  /users/{uName}/profile/followers:
-    parameters:
-    - name: uName
-      in: path
-      description: Target user's username
-      required: True
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    get:
-      tags: ["General"]
-      summary: Get list of user's followers
-      operationId: getFollowers
-      responses:
-        "200":
-          description: List of profiles of user's followers
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserProfile/properties/followers"
-        "400":
-          description: Invalid username
-        "404":
-          description: User not found
-          
-  # get following
-  /users/{uName}/profile/following:
-    parameters:
-    - name: uName
-      in: path
-      description: Target user's username
-      required: True
-      schema:
-        $ref: "#/components/schemas/User/properties/username"
-    get:
-      tags: ["General"]
-      summary: Get list of user's following
-      operationId: getFollowing
-      responses:
-        "200":
-          description: List of profiles of users that current user follows
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserProfile/properties/following"
-        "404":
-          description: User not found
   
   # adding/removing user to/from following
   /users/{uID}/profile/following/{user2}:
@@ -288,9 +238,9 @@ paths:
       operationId: unfollowUser
       responses:
         "200":
-          description: User unfollowed
+          description: User unfollowed 
         "400":
-          description: Invalid username
+          description: Invalid username # despite this being a delete operation, we still warn the user if user is not found, in case they misspelled the username, hence the use of 400 and 404
         "401":
           description: Operation unauthorised, identifier missing or invalid
         "404":
