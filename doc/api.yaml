@@ -2,71 +2,120 @@
 components:
   schemas:
   
-    User:
-      required: 
-        - username
-      type: object
-      properties: 
-        username:
-          $ref: "#/components/schemas/UsernameFormat"  
-        userID:
-          type: string
-          example: "abcdef012345"
-        profile:
-          $ref: '#/components/schemas/UserProfile'
-        # refraining from adding properties like full name, DoB etc for now, may add in the future
+    # User:
+    #   required: 
+    #     - username
+    #   type: object
+    #   properties: 
+    #     username:
+    #       $ref: "#/components/schemas/UsernameFormat"  
+    #     userID:
+    #       type: string
+    #       example: "abcdef012345"
+    #     profile:
+    #       $ref: '#/components/schemas/UserProfile'
+    #     # refraining from adding properties like full name, DoB etc for now, may add in the future
           
     UsernameFormat:
+      description: The required format of a username
       type: string
       example: Sir Wilburt Coddington III
-      pattern: 'ˆ.*?$'
+      pattern: "abc012"
       minLength: 3
       maxLength: 30   
           
     UserProfile:
+      description: Schema of a user's profile. Note that it does not include the blacklist or the userID.
       type: object
       properties:
         nphotos:
+          description: Number of photos of user
           type: integer
           example: 42
         photos:
+          description: User's photos
           type: array
           items:
             $ref: '#/components/schemas/Photo'
         # other properties needed will be subsequently added
         followers:
+          description: The list of user's followers
           type: array
           items:
-            $ref: '#/components/schemas/User'
+            $ref: '#/components/schemas/UserProfile'
         following:
+          description: The list of followed users
           type: array
           items: 
-            $ref: '#/components/schemas/User'
+            $ref: '#/components/schemas/UserProfile'
     
     Photo:
+      description: Schema of photo resources, which, other than the photo's binary data itself, also includes other fields.
       type: object
       properties:
         photoID:
+          description: Photo's ID
           type: integer
           example: 12345
         # the photo itself
         photoData:
+          description: The binary data of the photo
           type: string
           format: binary
         photoDescription:
+          description: Optional, a text to accompany the photo
           type: string
         # other data
         likes:
+          description: Number of likes on photo
           type: integer
           format: int64
           minimum: 0
         comments:
+          description: The comments on the photo
           type: array
           items: 
             type: string
         date:
+          description: Photo's upload date
           type: string
           format: date-time
+    
+    Error:
+      description: Generic error response's format
+      type: object
+      properties:
+        code:
+          description: Error's HTTP response code
+          type: string
+        message:
+          description: Error's associated message
+          type: string
+      required:
+        - code 
+        - message
+        
+  
+  responses:  
+    InvalidUsername:
+      description: (400) Username invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorised:
+      description: (401) Operation unauthorised, identifier missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: (404) Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+        
           
   securitySchemes:
     identifier:
@@ -117,25 +166,8 @@ paths:
                     type: string
                     example: "abcdef012345"
         "400":
-          description: Invalid username
+          $ref: "#/components/responses/InvalidUsername"
                       
-  /logout:
-    post:
-      tags: ["Session"]
-      summary: Logs out the user
-      description: |
-        Logs out the user and invalidates the identifier (token) associated to them.
-      operationId: doLogout
-      requestBody:
-        content:
-          application/json: {}
-        required: False
-      responses:
-        "200":
-          description: Logout successful
-      security:
-        - identifier: []
-        # instead of sending identifier in request body, have it in the header by specifying necessary security
           
   # set username        
   /users/{uID}/username:
@@ -159,13 +191,13 @@ paths:
             schema:
               $ref: "#/components/schemas/UsernameFormat"
       responses:
-        "200":
+        "204":
           description: New username set
           # Note: it may be the same as old one, not counted as error
         "400":
-          description: Invalid username format
+          $ref: "#/components/responses/InvalidUsername"
         "401":
-          description: Operation unauthorised, identifier missing or invalid
+          $ref: "#/components/responses/Unauthorised"
       # as we're modifying current user's data, we need to ensure client and {username} correspond, so we need the identifier
       security:
         - identifier: []
@@ -193,12 +225,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User/properties/profile"
+                $ref: "#/components/schemas/UserProfile"
         "400":
-          description: Invalid username
+          $ref: "#/components/responses/InvalidUsername"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
       # and here, since we are just retrieving public data, security is not required 
+      security:
+        - identifier: []
   
   
   # adding/removing user to/from following
@@ -219,32 +253,34 @@ paths:
     put:
       tags: ["U2U"]
       summary: Follow user
-      description: Add a user to the list of followed users. In this case user in path must correspond to current user.
+      description: Add a user to the list of followed users
       operationId: followUser
       responses:
-        "200":
+        "204":
           description: User followed
         "400":
-          description: Invalid username
+          $ref: "#/components/responses/InvalidUsername"
         "401":
-          description: Operation unauthorised, identifier missing or invalid
+          $ref: "#/components/responses/Unauthorised"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
     delete:
       tags: ["U2U"]
       summary: Unfollow user
+      description: Remove user from followed users' list
       operationId: unfollowUser
       responses:
-        "200":
-          description: User unfollowed 
+        "204":
+          description: User unfollowed
         "400":
-          description: Invalid username # despite this being a delete operation, we still warn the user if user is not found, in case they misspelled the username, hence the use of 400 and 404
+          $ref: "#/components/responses/InvalidUsername" 
+          # despite this being a delete operation, we still warn the user if user is not found, in case they misspelled the username, hence the use of 400 and 404
         "401":
-          description: Operation unauthorised, identifier missing or invalid
+          $ref: "#/components/responses/Unauthorised"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
     
@@ -265,36 +301,77 @@ paths:
         $ref: "#/components/schemas/UsernameFormat"
     put:
       tags: ["U2U"]
-      summary: Ban designated user (add to blacklist)
+      summary: Ban designated user
+      description: Ban user by adding them to blacklist 
       operationId: banUser
       responses:
-        "200":
+        "204":
           description: User added to blacklist
         "400":
-          description: Invalid username
+          $ref: "#/components/responses/InvalidUsername"
         "401":
-          description: Operation unauthorised, identifier invalid or missing
+          $ref: "#/components/responses/Unauthorised"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
     delete:
       tags: ["U2U"]
-      summary: Unban designated user (remove from blacklist)
+      summary: Unban designated user
+      description: Remove user from blacklist
       operationId: unbanUser
       responses:
-        "200":
+        "204":
           description: User removed from blacklist
         "400":
-          description: Invalid username
+          $ref: "#/components/responses/InvalidUsername"
         "401":
-          description: Operation unauthorised, identifier invalid or missing
+          $ref: "#/components/responses/Unauthorised"
         "404":
-          description: User not found
+          $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
       
-  # upload/delete photos
+  # upload photos
+  /users/{uID}/profile/photos:
+    parameters:
+    - name: uID
+      in: path
+      description: Current user's ID
+      required: True
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    post:
+      tags: ["General", "Photos"]
+      summary: Upload a photo to your profile
+      description: After uploading the photo, the server returns its id
+      operationId: uploadPhoto
+      requestBody:
+        required: True
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  $ref: "#/components/schemas/Photo"
+      responses:
+        "201":
+          description: Photo uploaded, returning photo's id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 01234
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+  # delete photo 
   /users/{uID}/profile/photos/{photoID}:
     parameters:
     - name: uID
@@ -311,41 +388,18 @@ paths:
         type: integer
         format: int64
         example: 01234
-    post:
-      tags: ["General", "Photos"]
-      summary: Upload a photo to your profile
-      operationId: uploadPhoto
-      requestBody:
-        required: True
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                photo:
-                  $ref: "#/components/schemas/Photo"
-      responses:
-        "200":
-          description: Photo uploaded
-        "400":
-          description: Photo ID not valid
-        "401":
-          description: Operation unauthorised, identifier missing or invalid
-      security:
-        - identifier: []
     delete:
       tags: ["General", "Photos"]
-      summary: Delete a photo and its likes and comments
+      summary: Delete photo
+      description: Deletes a photo with its likes and comments
       operationId: deletePhoto
       responses:
-        "200":
+        "204":
           description: Photo deleted
-        "400":
-          description: Photo ID not valid
         "401":
-          description: Operation unauthorised, identifier missing or invalid
+          $ref: "#/components/responses/Unauthorised"
         "404":
-          description: Photo not found
+          $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
     
@@ -370,36 +424,34 @@ paths:
     put:
       tags: ["Photos"]
       summary: Like the selected photo
+      description: Put a like to a photo
       operationId: likePhoto
       responses:
-        "200":
+        "204":
           description: Photo liked
-        "400":
-          description: Photo ID or user ID invalid
         "401":
-          description: Operation unauthorised, identifier missing or invalid
-        "404":
-          description: Photo not found
+          $ref: "#/components/responses/Unauthorised"
+        # "404":
+        #   $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
     delete:
       tags: ["Photos"]
       summary: Unlike selected photo
+      description: Unlike the photo
       operationId: unlikePhoto
       responses:
-        "200": 
+        "204": 
           description: Photo unliked
-        "400":
-          description: Photo ID or user ID invalid
         "401":
-          description: Operation unauthorised, identifier missing or invalid
-        "404":
-          description: Photo not found
+          $ref: "#/components/responses/Unauthorised"
+        # "404":
+        #   $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
   
-  # commenting/uncommenting a photo
-  /photos/{photoID}/comments/{uID}/{commentID}:
+  # commenting a photo
+  /photos/{photoID}/comments:
     parameters:
     - name: photoID
       in: path
@@ -408,21 +460,10 @@ paths:
       schema:
         type: integer
         format: int64
-    - name: uID
-      in: path
-      description: Commenting user's ID
-      required: True
-      schema:
-        type: string
-    - name: commentID
-      in: path
-      description: Comment's ID
-      required: True
-      schema:
-        type: integer
     post:
       tags: ["Photos"]
       summary: Comment on a photo
+      description: Posts comment and returns the comment ID
       operationId: commentPhoto
       requestBody:
         content:
@@ -431,29 +472,51 @@ paths:
               type: string
               example: "This is an example comment"
       responses:
-        "200":
-          description: Comment posted
-        "400":
-          description: Photo ID, user ID or comment ID invalid
+        "201":
+          description: Comment posted, returning its ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 01234
         "401":
-          description: Operation unauthorised, identifier missing or invalid
-        "404":
-          description: Photo not found
+          $ref: "#/components/responses/Unauthorised"
+        # "404":
+        #   $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
+        
+  # Uncommenting a photo
+  /photos/{photoID}/comments/{commentID}:
+    parameters:
+    - name: photoID
+      in: path
+      description: Photo's ID
+      required: True
+      schema:
+        type: integer
+        format: int64
+    - name: commentID
+      in: path
+      description: Comment's ID
+      required: True
+      schema:
+        type: integer
     delete:
       tags: ["Photos"]
       summary: Eliminate a comment
+      description: Delete comment with specified ID
       operationId: uncommentPhoto
       responses:
-        "200":
+        "204":
           description: Comment deleted
-        "400":
-          description: Photo ID, user ID or comment ID invalid
         "401":
-          description: Operation unauthorised, identifier missing or invalid
+          $ref: "#/components/responses/Unauthorised"
         "404":
-          description: Photo not found
+          $ref: "#/components/responses/NotFound"
       security:
         - identifier: []
   
@@ -462,16 +525,17 @@ paths:
     parameters:
     - name: uID
       in: path
-      description: Current user's ID
       required: True
+      description: ID of the user
       schema:
-        $ref: "#/components/schemas/UsernameFormat"
+        type: string
+        example: "abcdef012345"
     get:
       tags: ["General"]
       summary: Gets a user's stream
       description: | 
         Only provide user's id to server, the logical part (retrieving following, then getting their photos) is done backend.
-      operationId: getStream
+      operationId: getMyStream
       responses:
         "200":
           description: User's stream retrieved
@@ -481,12 +545,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Photo"
-        "400":
-          description: Invalid username
         "401":
-          description: Operation unauthorised, identifier missing or invalid
-        "404":
-          description: User not found
+          $ref: "#/components/responses/Unauthorised"
       security:
         - identifier: []
       
