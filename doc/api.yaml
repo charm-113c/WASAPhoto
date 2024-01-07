@@ -1,26 +1,12 @@
 # Defining User, UserProfile, Photo, and possibly Stream, Likes and Comments
 components:
   schemas:
-  
-    # User:
-    #   required: 
-    #     - username
-    #   type: object
-    #   properties: 
-    #     username:
-    #       $ref: "#/components/schemas/UsernameFormat"  
-    #     userID:
-    #       type: string
-    #       example: "abcdef012345"
-    #     profile:
-    #       $ref: '#/components/schemas/UserProfile'
-    #     # refraining from adding properties like full name, DoB etc for now, may add in the future
           
     UsernameFormat:
       description: The required format of a username
       type: string
       example: Sir Wilburt Coddington III
-      pattern: "abc012"
+      pattern: "Abc Def"
       minLength: 3
       maxLength: 30   
           
@@ -35,17 +21,23 @@ components:
         photos:
           description: User's photos
           type: array
+          minItems: 0
+          maxItems: 9999
           items:
             $ref: '#/components/schemas/Photo'
         # other properties needed will be subsequently added
         followers:
           description: The list of user's followers
           type: array
+          minItems: 0
+          maxItems: 9999
           items:
             $ref: '#/components/schemas/UserProfile'
         following:
           description: The list of followed users
           type: array
+          minItems: 0
+          maxItems: 9999
           items: 
             $ref: '#/components/schemas/UserProfile'
     
@@ -61,10 +53,16 @@ components:
         photoData:
           description: The binary data of the photo
           type: string
+          pattern: "01"
+          minLength: 1
+          maxLength: 9999
           format: binary
         photoDescription:
           description: Optional, a text to accompany the photo
           type: string
+          pattern: "Hi "
+          minLength: 0
+          maxLength: 9999
         # other data
         likes:
           description: Number of likes on photo
@@ -74,8 +72,13 @@ components:
         comments:
           description: The comments on the photo
           type: array
+          minItems: 0
+          maxItems: 9999
           items: 
             type: string
+            pattern: "Hi "
+            minLength: 1
+            maxLength: 9999
         date:
           description: Photo's upload date
           type: string
@@ -88,9 +91,15 @@ components:
         code:
           description: Error's HTTP response code
           type: string
+          pattern: "404"
+          minLength: 3
+          maxLength: 3
         message:
           description: Error's associated message
           type: string
+          pattern: "Error"
+          minLength: 1
+          maxLength: 9999
       required:
         - code 
         - message
@@ -163,8 +172,8 @@ paths:
                   identifier:
                     # change here if you decide to use an integer
                     # or any other type of identifier
-                    type: string
-                    example: "abcdef012345"
+                    type: integer
+                    example: 01234
         "400":
           $ref: "#/components/responses/InvalidUsername"
                       
@@ -182,8 +191,9 @@ paths:
           description: Current user's id
           required: True
           schema:
-            type: string
-            example: "abcdef012345"
+            type: integer
+            example: 01234
+            
       requestBody:
         description: New username
         content:
@@ -215,10 +225,7 @@ paths:
           description: Searched user's username
           required: True
           schema:
-            anyOf:
-              - $ref: "#/components/schemas/UsernameFormat"
-              # - type: string
-              # Used to allow search by either uName or uID, but since ID only lasts for session, option eliminated
+             $ref: "#/components/schemas/UsernameFormat"
       responses:
         "200":
           description: Searched user's profile
@@ -243,7 +250,8 @@ paths:
       required: True
       description: Current user's ID
       schema:
-        $ref: "#/components/schemas/UsernameFormat"
+        type: integer
+        example: 01234
     - name: user2
       in: path
       required: True
@@ -292,7 +300,8 @@ paths:
       description: Current user's ID
       required: True
       schema:
-        $ref: "#/components/schemas/UsernameFormat"
+        type: integer
+        example: 01234
     - name: user2
       in: path
       description: Target user's name
@@ -340,7 +349,8 @@ paths:
       description: Current user's ID
       required: True
       schema:
-        $ref: "#/components/schemas/UsernameFormat"
+        type: integer
+        example: 01234
     post:
       tags: ["General", "Photos"]
       summary: Upload a photo to your profile
@@ -379,7 +389,8 @@ paths:
       description: Current user's ID
       required: True
       schema:
-        $ref: "#/components/schemas/UsernameFormat"
+        type: integer
+        example: 01234
     - name: photoID
       in: path
       description: Photo's ID
@@ -412,15 +423,14 @@ paths:
       description: Photo's ID
       schema:
         type: integer
-        format: int64
         example: 01234
     - name: uID
       in: path
       required: True
       description: ID of the user liking the photo
       schema:
-        type: string
-        example: "abcdef012345"
+        type: integer
+        example: 01234
     put:
       tags: ["Photos"]
       summary: Like the selected photo
@@ -471,6 +481,9 @@ paths:
             schema:
               type: string
               example: "This is an example comment"
+              pattern: "Hi "
+              minLength: 1
+              maxLength: 9999
       responses:
         "201":
           description: Comment posted, returning its ID
@@ -528,8 +541,8 @@ paths:
       required: True
       description: ID of the user
       schema:
-        type: string
-        example: "abcdef012345"
+        type: integer
+        example: 01234
     get:
       tags: ["General"]
       summary: Gets a user's stream
@@ -543,6 +556,8 @@ paths:
             application/json:
               schema:
                 type: array
+                minItems: 0
+                maxItems: 9999
                 items:
                   $ref: "#/components/schemas/Photo"
         "401":
