@@ -3,15 +3,17 @@ components:
   schemas:
           
     UsernameFormat:
-      description: The required format of a username
+      description: |-
+        The required format of a username
       type: string
       example: Sir Wilburt Coddington III
-      pattern: "Abc Def"
+      pattern: '^[a-zA-Z0-9\s]*$'
       minLength: 3
       maxLength: 30   
           
     UserProfile:
-      description: Schema of a user's profile. Note that it does not include the blacklist or the userID.
+      description: |-
+        Schema of a user's profile. Note that it does not include the blacklist or the userID.
       type: object
       properties:
         nphotos:
@@ -32,17 +34,18 @@ components:
           minItems: 0
           maxItems: 9999
           items:
-            $ref: '#/components/schemas/UserProfile'
+            $ref: '#/components/schemas/UsernameFormat'
         following:
           description: The list of followed users
           type: array
           minItems: 0
           maxItems: 9999
           items: 
-            $ref: '#/components/schemas/UserProfile'
+            $ref: '#/components/schemas/UsernameFormat'
     
     Photo:
-      description: Schema of photo resources, which, other than the photo's binary data itself, also includes other fields.
+      description: |-
+        Schema of photo resources, which, other than the photo's binary data itself, also includes other fields.
       type: object
       properties:
         photoID:
@@ -53,14 +56,14 @@ components:
         photoData:
           description: The binary data of the photo
           type: string
-          pattern: "01"
+          pattern: "[01]*"
           minLength: 1
           maxLength: 9999
           format: binary
         photoDescription:
           description: Optional, a text to accompany the photo
           type: string
-          pattern: "Hi "
+          pattern: '^[a-zA-Z0-9\s]*$'
           minLength: 0
           maxLength: 9999
         # other data
@@ -76,28 +79,31 @@ components:
           maxItems: 9999
           items: 
             type: string
-            pattern: "Hi "
+            pattern: '^[a-zA-Z0-9\s]*$'
             minLength: 1
             maxLength: 9999
         date:
           description: Photo's upload date
           type: string
           format: date-time
+          minLength: 20
+          maxLength: 20
     
     Error:
-      description: Generic error response's format
+      description: |-
+        Generic error response's format
       type: object
       properties:
         code:
           description: Error's HTTP response code
           type: string
-          pattern: "404"
+          pattern: "4[0-9]*"
           minLength: 3
           maxLength: 3
         message:
           description: Error's associated message
           type: string
-          pattern: "Error"
+          pattern: '^[a-zA-Z0-9\s]*$'
           minLength: 1
           maxLength: 9999
       required:
@@ -481,7 +487,7 @@ paths:
             schema:
               type: string
               example: "This is an example comment"
-              pattern: "Hi "
+              pattern: '^[a-zA-Z0-9\s]*$'
               minLength: 1
               maxLength: 9999
       responses:
