@@ -38,8 +38,8 @@ import (
 
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
-	GetName() (string, error)
-	SetName(name string) error
+	FindByName(username string) (string, error)
+	AddUser(name string) error
 
 	Ping() error
 }
@@ -59,7 +59,55 @@ func New(db *sql.DB) (AppDatabase, error) {
 	var tableName string
 	err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='example_table';`).Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
-		sqlStmt := `CREATE TABLE example_table (id INTEGER NOT NULL PRIMARY KEY, name TEXT);`
+		// create 3 tables: Users, Photos and Comments. Alright so it became more complex than I thought. Just a little more complex. Just a little.
+		sqlStmt := `CREATE TABLE Users (
+				username TEXT NOT NULL PRIMARY KEY, 
+				userID INTEGER, 
+				nphotos INTEGER
+			);
+			
+			CREATE TABLE Following (
+				username TEXT,
+				followedUser TEXT,
+				PRIMARY KEY (username, followedUser),
+				FOREIGN KEY (username) REFERENCES Users(username),
+				FOREIGN KEY (followedUser) REFERENCES Users(username)
+			);
+			
+			CREATE TABLE Blacklist (
+				username TEXT,
+				bannedUser TEXT,
+				PRIMARY KEY (username, bannedUser),
+				FOREIGN KEY (username) REFERENCES Users(username),
+				FOREIGN KEY (bannedUser) REFERENCES Users(username)
+			);
+			
+			CREATE TABLE Photos (
+				photoID INTEGER NOT NULL PRIMARY KEY,
+				username TEXT,
+				likes INTEGER,
+				uploadDate DATETIME,
+				description TEXT,
+				FOREIGN KEY (username) REFERENCES Users(username)
+			);
+			
+			CREATE TABLE Likes (
+				photoID INTEGER,
+				username TEXT,
+				PRIMARY KEY (photoID, username),
+				FOREIGN KEY (username) REFERENCES Users(username),
+				FOREIGN KEY (photoID) REFERENCES Photos(photoID)
+			);
+			
+			CREATE TABLE Comments (
+				commentID INTEGER NOT NULL PRIMARY KEY,
+				photoID INTEGER,
+				username TEXT,
+				uploadDate DATETIME,
+				FOREIGN KEY (photoID) REFERENCES Photos(photoID),
+				FOREIGN KEY (username) REFERENCES Users(username)
+			);`
+
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
 			return nil, fmt.Errorf("error creating database structure: %w", err)
