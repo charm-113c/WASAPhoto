@@ -34,12 +34,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/gofrs/uuid"
 )
 
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
 	FindByName(username string) (string, error)
 	AddUser(name string) error
+	SetID(id uuid.UUID, username string) error
 
 	Ping() error
 }
@@ -62,7 +65,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		// create 3 tables: Users, Photos and Comments. Alright so it became more complex than I thought. Just a little more complex. Just a little.
 		sqlStmt := `CREATE TABLE Users (
 				username TEXT NOT NULL PRIMARY KEY, 
-				userID INTEGER, 
+				userID TEXT, 
 				nphotos INTEGER
 			);
 			

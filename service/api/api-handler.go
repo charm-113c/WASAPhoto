@@ -4,6 +4,8 @@ import (
 	"net/http"
 )
 
+
+
 // Handler returns an instance of httprouter.Router that handle APIs registered here
 func (rt *_router) Handler() http.Handler {
 	// Register routes
@@ -15,6 +17,6 @@ func (rt *_router) Handler() http.Handler {
 
 
 	// Our stuff
-	rt.router.POST("/login", rt.doLogin)
+	rt.router.POST("/login/*username", rt.doLogin)
 	return rt.router
 }
