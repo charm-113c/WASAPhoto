@@ -28,9 +28,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/database"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/globaltime"
+	"github.com/R-Andom13/WASAPhoto/service/api"
+	"github.com/R-Andom13/WASAPhoto/service/database"
+	"github.com/R-Andom13/WASAPhoto/service/globaltime"
 	"github.com/ardanlabs/conf"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
@@ -68,6 +68,7 @@ func run() error {
 		}
 		return err
 	}
+	//fmt.Printf("Loaded configuration:  %+v\n", cfg)
 
 	// Init logging
 	logger := logrus.New()
@@ -169,6 +170,7 @@ func run() error {
 		if err != nil {
 			logger.WithError(err).Warning("error during graceful shutdown of HTTP server")
 			err = apiserver.Close()
+			return err // pesky compiltime error of err not being used
 		}
 
 		// Log the status of this shutdown.

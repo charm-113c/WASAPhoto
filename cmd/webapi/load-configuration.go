@@ -14,7 +14,7 @@ import (
 // loadConfiguration and values from flags, environment variable or configuration file will be loaded.
 type WebAPIConfiguration struct {
 	Config struct {
-		Path string `conf:"default:/conf/config.yml"`
+		Path string `conf:"default:C:/Users/randr/OneDrive/Desktop/Tempest/WASA/WASAPhoto/WASAPhoto/demo/config.yml"`
 	}
 	Web struct {
 		APIHost         string        `conf:"default:0.0.0.0:3000"`
@@ -23,7 +23,7 @@ type WebAPIConfiguration struct {
 		WriteTimeout    time.Duration `conf:"default:5s"`
 		ShutdownTimeout time.Duration `conf:"default:5s"`
 	}
-	Debug bool
+	Debug bool `conf:"default:true"`
 	DB    struct {
 		Filename string `conf:"default:/tmp/decaf.db"`
 	}

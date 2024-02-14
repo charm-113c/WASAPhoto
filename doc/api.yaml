@@ -179,27 +179,25 @@ paths:
                   identifier:
                     # change here if you decide to use an integer
                     # or any other type of identifier
-                    type: integer
-                    example: 01234
+                    type: string
         "400":
           $ref: "#/components/responses/InvalidUsername"
                       
           
   # set username        
-  /users/{uID}/username:
+  /users/{uName}/username:
     put:
       tags: ["General"]
       summary: Changes own username
       description: Change current username
       operationId: setMyUserName
       parameters:
-        - name: uID
+        - name: uName
           in: path
-          description: Current user's id
+          description: Searched user's username
           required: True
           schema:
-            type: integer
-            example: 01234
+             $ref: "#/components/schemas/UsernameFormat"
             
       requestBody:
         description: New username
@@ -250,15 +248,14 @@ paths:
   
   
   # adding/removing user to/from following
-  /users/{uID}/profile/following/{user2}:
+  /users/{uName}/profile/following/{user2}:
     parameters:
-    - name: uID
+    - name: uName
       in: path
+      description: Current user's username
       required: True
-      description: Current user's ID
       schema:
-        type: integer
-        example: 01234
+          $ref: "#/components/schemas/UsernameFormat"
     - name: user2
       in: path
       required: True
@@ -300,15 +297,14 @@ paths:
         - identifier: []
     
   # ban/unban user
-  /users/{uID}/blacklist/{user2}:
+  /users/{uName}/blacklist/{user2}:
     parameters:
-    - name: uID
+    - name: uName
       in: path
-      description: Current user's ID
+      description: Current user's username
       required: True
       schema:
-        type: integer
-        example: 01234
+        $ref: "#/components/schemas/UsernameFormat"
     - name: user2
       in: path
       description: Target user's name
@@ -349,15 +345,14 @@ paths:
         - identifier: []
       
   # upload photos
-  /users/{uID}/profile/photos:
+  /users/{uName}/profile/photos:
     parameters:
-    - name: uID
+    - name: uName
       in: path
-      description: Current user's ID
+      description: Current user's username
       required: True
       schema:
-        type: integer
-        example: 01234
+        $ref: "#/components/schemas/UsernameFormat"
     post:
       tags: ["General", "Photos"]
       summary: Upload a photo to your profile
@@ -389,15 +384,14 @@ paths:
         - identifier: []
         
   # delete photo 
-  /users/{uID}/profile/photos/{photoID}:
+  /users/{uName}/profile/photos/{photoID}:
     parameters:
-    - name: uID
+    - name: uName
       in: path
-      description: Current user's ID
+      description: Current user's username
       required: True
       schema:
-        type: integer
-        example: 01234
+        $ref: "#/components/schemas/UsernameFormat"
     - name: photoID
       in: path
       description: Photo's ID
@@ -422,7 +416,7 @@ paths:
         - identifier: []
     
   # Liking/unliking a photo
-  /photos/{photoID}/likes/{uID}:
+  /photos/{photoID}/likes/{uName}:
     parameters:
     - name: photoID
       in: path
@@ -431,13 +425,12 @@ paths:
       schema:
         type: integer
         example: 01234
-    - name: uID
+    - name: uName
       in: path
+      description: Current user's username
       required: True
-      description: ID of the user liking the photo
       schema:
-        type: integer
-        example: 01234
+        $ref: "#/components/schemas/UsernameFormat"
     put:
       tags: ["Photos"]
       summary: Like the selected photo
@@ -541,15 +534,14 @@ paths:
         - identifier: []
   
   # Stream
-  /users/{uID}/Stream:
+  /users/{uName}/Stream:
     parameters:
-    - name: uID
+    - name: uName
       in: path
+      description: Current user's username
       required: True
-      description: ID of the user
       schema:
-        type: integer
-        example: 01234
+        $ref: "#/components/schemas/UsernameFormat"
     get:
       tags: ["General"]
       summary: Gets a user's stream

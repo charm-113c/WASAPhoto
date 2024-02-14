@@ -17,6 +17,10 @@ func (rt *_router) Handler() http.Handler {
 
 
 	// Our stuff
-	rt.router.POST("/login/*username", rt.doLogin)
+	rt.router.POST("/login", rt.doLogin)
+	rt.router.PUT("/users/:username/username", rt.setMyUserName)
+	rt.router.GET("/users/:username/profile", rt.getUserProfile)
+	rt.router.POST("/users/:username/profile/photos", rt.uploadPhoto)
+	rt.router.PUT("/users/:username/profile/following/:user2", rt.followUser)
 	return rt.router
 }
