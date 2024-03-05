@@ -28,17 +28,18 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/R-Andom13/WASAPhoto/service/api"
 	"github.com/R-Andom13/WASAPhoto/service/database"
 	"github.com/R-Andom13/WASAPhoto/service/globaltime"
 	"github.com/ardanlabs/conf"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
-	"math/rand"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // main is the program entry point. The only purpose of this function is to call run() and set the exit code if there is
@@ -69,6 +70,9 @@ func run() error {
 		return err
 	}
 	//fmt.Printf("Loaded configuration:  %+v\n", cfg)
+	tail := globaltime.Now()
+	// modify secret key to be randomized
+	currKey := cfg.Web.SecretKey + tail.String()
 
 	// Init logging
 	logger := logrus.New()
@@ -114,6 +118,7 @@ func run() error {
 	apirouter, err := api.New(api.Config{
 		Logger:   logger,
 		Database: db,
+		SecretKey: currKey,
 	})
 	if err != nil {
 		logger.WithError(err).Error("error creating the API server instance")
@@ -174,12 +179,12 @@ func run() error {
 		}
 
 		// Log the status of this shutdown.
-		// switch {
+		switch {
 		// case sig == syscall.SIGSTOP:
 		// 	return errors.New("integrity issue caused shutdown")
-		// case err != nil:
-		// 	return fmt.Errorf("could not stop server gracefully: %w", err)
-		// }
+		case err != nil:
+			return fmt.Errorf("could not stop server gracefully: %w", err)
+		}
 	}
 
 	return nil

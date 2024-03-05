@@ -185,14 +185,14 @@ paths:
                       
           
   # set username        
-  /users/{uName}/username:
+  /users/{username}/username:
     put:
       tags: ["General"]
       summary: Changes own username
       description: Change current username
       operationId: setMyUserName
       parameters:
-        - name: uName
+        - name: username
           in: path
           description: Searched user's username
           required: True
@@ -218,14 +218,14 @@ paths:
         - identifier: []
         
   # get user's profile      
-  /users/{uName}/profile:
+  /users/{target_username}/profile:
     get:
       tags: ["General"]
       summary: Search given user
       description: Get the profile of given user
       operationId: getUserProfile
       parameters:
-        - name: uName
+        - name: target_username
           in: path
           description: Searched user's username
           required: True
@@ -248,9 +248,9 @@ paths:
   
   
   # adding/removing user to/from following
-  /users/{uName}/profile/following/{user2}:
+  /users/{username}/profile/following/{user2}:
     parameters:
-    - name: uName
+    - name: username
       in: path
       description: Current user's username
       required: True
@@ -297,9 +297,9 @@ paths:
         - identifier: []
     
   # ban/unban user
-  /users/{uName}/blacklist/{user2}:
+  /users/{username}/blacklist/{user2}:
     parameters:
-    - name: uName
+    - name: username
       in: path
       description: Current user's username
       required: True
@@ -345,9 +345,9 @@ paths:
         - identifier: []
       
   # upload photos
-  /users/{uName}/profile/photos:
+  /users/{username}/profile/photos:
     parameters:
-    - name: uName
+    - name: username
       in: path
       description: Current user's username
       required: True
@@ -384,9 +384,9 @@ paths:
         - identifier: []
         
   # delete photo 
-  /users/{uName}/profile/photos/{photoID}:
+  /users/{username}/profile/photos/{photoID}:
     parameters:
-    - name: uName
+    - name: username
       in: path
       description: Current user's username
       required: True
@@ -416,7 +416,7 @@ paths:
         - identifier: []
     
   # Liking/unliking a photo
-  /photos/{photoID}/likes/{uName}:
+  /photos/{photoID}/likes/{username}:
     parameters:
     - name: photoID
       in: path
@@ -425,7 +425,7 @@ paths:
       schema:
         type: integer
         example: 01234
-    - name: uName
+    - name: username
       in: path
       description: Current user's username
       required: True
@@ -534,9 +534,9 @@ paths:
         - identifier: []
   
   # Stream
-  /users/{uName}/Stream:
+  /users/{username}/Stream:
     parameters:
-    - name: uName
+    - name: username
       in: path
       description: Current user's username
       required: True

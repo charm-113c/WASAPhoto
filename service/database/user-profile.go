@@ -1,4 +1,4 @@
-package api
+package database
 
 import "time"
 
@@ -14,19 +14,22 @@ type UserProfile struct {
 }
 
 type Photo struct {
-	PhotoID int
+	PhotoID int  
+	// UploaderID string
 	BinaryData []byte
 	Description string
 	Likes int
-	Comments []Comment 
 	UploadDate time.Time 
-	FileName string
 	FileExtension string
+	Comments int
 }
 
+// sorry for the disturbance
+// ################### CREATE OPID GETPHOTO OR GETCOMMENTS
 type Comment struct {
 	CommentID int
 	CommentText string
-	Uploader string
+	UploaderID string
 	UploadDate time.Time
 }
+

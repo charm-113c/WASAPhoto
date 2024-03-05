@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -48,7 +49,7 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 			fmt.Println("Error creating userID: ", err)
 			return 
 		}
-		// add user with bearerAuthid='00000000-0000-0000-0000-000000000000' and nphotos=0
+		// add user with nphotos=0
 		err = rt.db.AddUser(username, uid.String()) 
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -56,26 +57,22 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 			return
 		}
 	}
-
-	// create bearer auth identifier
-	bearauthid, err := uuid.NewV7()
+	// in any case, get userID to generate token
+	uData, err := rt.db.GetUserData(username)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		fmt.Println("Error creating bearerAuthID: ", err)
-		return 
+		fmt.Println("Error getting user data: ", err)
+		return
 	}
-
-	// update DB
-	err = rt.db.SetID(bearauthid.String(), username)
+	// create JWT token for bearer auth 
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"userID":uData.UserID})
+	signedToken, err := token.SignedString([]byte(rt.seckey))
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		fmt.Println("Error updating DB: ", err)
-		return 
+		fmt.Println("Error signing JWT token: ", err)
+		return
 	}
-	// return id in response
-	fmt.Fprintf(w, "Bearer authentication token: %s", bearauthid)
+	// return token in response
+	fmt.Fprintf(w, "Bearer authentication token: %s", signedToken)
 
-	// ###########################
-	// doLogin should also launch getMyStream at the end
-	// ###########################
 }

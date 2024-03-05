@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"errors"
+	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -15,23 +17,29 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	w.Header().Set("Content-type", "text/plain")
 
 	// check authorization
-	currname := ps.ByName("username")
-	currname = strings.TrimPrefix(currname, "username=")
-	token := r.Header.Get("Authorization")
-	token = strings.TrimPrefix(token, "Bearer ")
-	fmt.Fprintln(w, "Current username: ", currname)
-
-	valid, err := rt.db.TokenIsValid(currname, token)
+	currname := strings.TrimPrefix(ps.ByName("username"), "username=")
+	uData, err := rt.db.GetUserData(currname)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows){
+			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking token validity: ", err)
-		return 
+		log.Println("Error getting user data: ", err)
+		return
+		
 	}
-	if !valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Operation unauthorised, header Authorization missing or invalid")
-		return 
-	}
+	err = validateToken(r, uData.UserID, rt.seckey)
+	if err != nil {
+		if strings.Contains(err.Error(), "unauthorized"){
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprintf(w, "Authorization check failed: %s", err)
+		} else {
+			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+			log.Println("Error performing authorization check: ", err)
+		}
+		return
+	} 
 
 	// check new name validity
 	if r.Header.Get("Content-type") != "text/plain" {
@@ -71,5 +79,6 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 		log.Println("Error updating username in DB: ", err)
 		return
 	}
+	fmt.Fprintln(w, "Current username: ", currname)
 	fmt.Fprint(w, "New name set, your new username is: ", newname)
 }

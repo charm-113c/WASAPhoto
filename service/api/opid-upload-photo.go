@@ -7,30 +7,38 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"errors"
+	"database/sql"
 
-	"github.com/R-Andom13/WASAPhoto/service/database"
 	"github.com/julienschmidt/httprouter"
 )
 
 // Allows a user to post a photo to their profile
 func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Content-type", "text/plain")
-	// Check authorization -> read request body -> obtain data/metadata -> add to db
 	// Check authorization
-	username := ps.ByName("username")
-	username = strings.TrimPrefix(username, "username=")
-	token := r.Header.Get("Authorization")
-	token = strings.TrimPrefix(token, "Bearer ")
-	valid, err := rt.db.TokenIsValid(username, token)
+	username := strings.TrimPrefix(ps.ByName("username"), "username=")
+	uData, err := rt.db.GetUserData(username)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows){
+			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking token validity: ", err)
+		log.Println("Error getting user data: ", err)
 		return
 	}
-	if !valid {
-		http.Error(w, "Operation unauthorised, header Authorization missing or invalid", http.StatusUnauthorized)
+	err = validateToken(r, uData.UserID, rt.seckey)
+	if err != nil {
+		if strings.Contains(err.Error(), "unauthorized"){
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprintf(w, "Authorization check failed: %s", err)
+		} else {
+			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+			log.Println("Error performing authorization check: ", err)
+		}
 		return
-	}
+	} 
 
 	// get number of images uploaded
 	n := r.Header.Get("n-images")
@@ -51,49 +59,74 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		log.Println("Error parsing form data: ", err)
 		return 
 	}
-	// Collect/create metadata
+
+	// Collect metadata
 	upDate := r.FormValue("UploadDate")
 	imgDesc := r.FormValue("Description")
-	var uData database.UserData
 
-	// we allow multiple images uploaded: process each
+	// we allow multiple images to be uploaded: process each
+	// in case of errors:
+	problemFiles := 0 
 	for i := 1; i <= n_img; i++ {
+		// note: failure to upload one image != abort entire operation
+		// we instead try to upload the next images if they exist
+		// and warn user of the failed attempts
 		i_file:= strconv.Itoa(i)
 		fieldname := "UploadedImage" + i_file  
 		// open img file
 		imgFile, handler, err := r.FormFile(fieldname)
 		if err != nil {
-			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+			problemFiles++
+			errMess := fmt.Sprintf("Something went wrong with file %s so it was ignored", handler.Filename)
+			http.Error(w, errMess, http.StatusInternalServerError)
 			log.Println("Error retrieving uploaded image file: ", err)
-			return
+			imgFile.Close() // force close file
+			continue
+		}
+		defer imgFile.Close()
+		imgExtension := handler.Header.Get("Content-Type")
+		if !strings.Contains(imgExtension, "image") {
+			problemFiles++
+			fmt.Fprintf(w, "File: %s is not an image and was ignored\n", handler.Filename)
+			imgFile.Close()
+			continue
 		}
 		// read file
 		imgData, err := io.ReadAll(imgFile)
 		if err != nil {
-			http.Error(w, "Error reading the image", http.StatusInternalServerError)
+			problemFiles++
+			errMess := fmt.Sprintf("Something went wrong with file %s so it was ignored", handler.Filename)
+			http.Error(w, errMess, http.StatusInternalServerError)
 			log.Println("Error reading image file: ", err)
-			return 
+			imgFile.Close()
+			continue 
 		} 
-		imgExtension := handler.Header.Get("Content-Type")
 		// Get user data (with updated nphotos)
 		uData, err = rt.db.GetUserData(username)
 		if err != nil {
-			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+			problemFiles++
+			errMess := fmt.Sprintf("Something went wrong with file %s so it was ignored", handler.Filename)
+			http.Error(w, errMess, http.StatusInternalServerError)
 			log.Println("Error finding user ID: ", err)
-			return
+			imgFile.Close()
+			continue
 		}
 		// upload with necessary data
 		err = rt.db.UploadImage(uData.Nphotos, uData.UserID, imgData, imgDesc, upDate, imgExtension)
 		if err != nil {
-			http.Error(w, "Error uploading image", http.StatusInternalServerError)
+			problemFiles++
+			errMess := fmt.Sprintf("Something went wrong with file %s so it was ignored", handler.Filename)
+			http.Error(w, errMess, http.StatusInternalServerError)
 			log.Println("Error inserting image into DB: ", err)
-			return
+			imgFile.Close()
+			continue
 		}
-		// finally, we increase user's nphotos
-		rt.db.UpdateNphotos(username, true)
-		imgFile.Close()
 	}
-
+	if problemFiles > 0 {
+		http.Error(w, "Some file(s) couldn't be uploaded, you may want to try uploading them again", http.StatusInternalServerError)
+		return
+	}
+	
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "Image(s) uploaded succesfully")
 }

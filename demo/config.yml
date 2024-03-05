@@ -11,6 +11,7 @@ log:
 web:
   apihost: 0.0.0.0:3000
   debughost: 0.0.0.0:4000
+  secretkey: the answer to life the universe and everything
   readtimeout: 3s
   writetimeout: 3s
   shutdowntimeout: 3s
