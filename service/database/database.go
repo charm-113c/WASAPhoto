@@ -38,14 +38,38 @@ import (
 
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
-	GetName() (string, error)
-	SetName(name string) error
+	GetUserData(username string) (UserData, error)
+	AddUser(name string, userid string) error
+	SetNewName(currName string, newName string) error
+	UserInDB(username string) (bool, error)
+	UploadImage(photoID int, uID string, binData []byte, desc string, upDate string, ext string) error
+	FollowUser(user1ID string, user2ID string) error
+	HasBanned(user1ID string, user2ID string) (bool, error)
+	GetPhotos(userID string) ([]Photo, error)
+	GetFollowers(userID string) ([]string, error)
+	GetFollowing(userID string) ([]string, error)
+	GetFollowedPhotos(userID string) ([]Photo, error)
+	BanUser(user1ID string, user2ID string) error
+	UnfollowUser(user1ID string, user2ID string) error
+	LikePhoto(uploaderID string, photoID int, likingUserID string) error
+	GetPhotoData(userID string, photoID int) (Photo, error)
+	UploadComment(comment string, commentID int, commenterID string, photoID int, uploaderID string, uploadDate string) error
+	DeletePhoto(userID string, photoID int) error
+	UnbanUser(user1ID string, user2ID string) error
+	UnlikePhoto(uploaderID string, photoID int, likingUserID string) error
+	UncommentPhoto(uploaderID string, photoID int, commentID int) error
 
 	Ping() error
 }
 
 type appdbimpl struct {
 	c *sql.DB
+}
+
+type UserData struct {
+	Username string
+	UserID string
+	Nphotos int
 }
 
 // New returns a new instance of AppDatabase based on the SQLite connection `db`.
@@ -57,9 +81,67 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	// Check if table exists. If not, the database is empty, and we need to create the structure
 	var tableName string
-	err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='example_table';`).Scan(&tableName)
+	err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='Users';`).Scan(&tableName)
 	if errors.Is(err, sql.ErrNoRows) {
-		sqlStmt := `CREATE TABLE example_table (id INTEGER NOT NULL PRIMARY KEY, name TEXT);`
+		// Note: as usernames can be changed, static userIDs are set to make updating the DB easier
+		sqlStmt := `CREATE TABLE Users (
+				username TEXT NOT NULL,
+				userID TEXT NOT NULL PRIMARY KEY, 
+				nphotos INTEGER
+			);
+			
+			CREATE TABLE Following (
+				userID TEXT NOT NULL,
+				followedUserID TEXT NOT NULL,
+				PRIMARY KEY (userID, followedUserID),
+				FOREIGN KEY (userID) REFERENCES Users(userID),
+				FOREIGN KEY (followedUserID) REFERENCES Users(userID)
+			);
+			
+			CREATE TABLE Blacklist (
+				userID TEXT NOT NULL,
+				bannedUserID TEXT NOT NULL,
+				PRIMARY KEY (userID, bannedUserID),
+				FOREIGN KEY (userID) REFERENCES Users(userID),
+				FOREIGN KEY (bannedUserID) REFERENCES Users(userID)
+			);
+			
+			CREATE TABLE Photos (
+				photoID INTEGER NOT NULL,
+				userID TEXT NOT NULL,
+				photoData BLOB,
+				description TEXT,
+				likes INTEGER,
+				uploadDate DATETIME,
+				fileExtension TEXT,
+				comments INTEGER,
+				PRIMARY KEY (photoID, userID)
+				FOREIGN KEY (userID) REFERENCES Users(userID)
+			);
+			
+			CREATE TABLE Likes (
+				uploaderID TEXT NOT NULL,
+				photoID INTEGER NOT NULL,
+				likingUserID TEXT NOT NULL,
+				PRIMARY KEY (photoID, uploaderID, likingUserID),
+				FOREIGN KEY (uploaderID) REFERENCES Users(userID),
+				FOREIGN KEY (likingUserID) REFERENCES Users(userID),
+				FOREIGN KEY (photoID) REFERENCES Photos(photoID)
+			);
+			
+			CREATE TABLE Comments (
+				content TEXT,
+				commentID INTEGER NOT NULL,
+				commenterID TEXT NOT NULL,
+				photoID INTEGER NOT NULL,
+				photoUploaderID TEXT NOT NULL,
+				uploadDate DATETIME,
+				PRIMARY KEY (commentID, photoID, photoUploaderID),
+				FOREIGN KEY (photoID) REFERENCES Photos(photoID),
+				FOREIGN KEY (commenterID) REFERENCES Users(userID),
+				FOREIGN KEY (photoUploaderID) REFERENCES Users(userID)
+			);`
+
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
 			return nil, fmt.Errorf("error creating database structure: %w", err)
@@ -74,3 +156,10 @@ func New(db *sql.DB) (AppDatabase, error) {
 func (db *appdbimpl) Ping() error {
 	return db.c.Ping()
 }
+
+/* 
+In each photo, comments have a unique identifier: the number of comments+1 at the time 
+the comment is uploaded. 
+So, just like photoID, commentIDs aren't unique on their own, but require the photo
+they belong to for uniqueness.
+*/ 

@@ -38,7 +38,7 @@ package api
 
 import (
 	"errors"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/database"
+	"github.com/R-Andom13/WASAPhoto/service/database"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -51,6 +51,9 @@ type Config struct {
 
 	// Database is the instance of database.AppDatabase where data are saved
 	Database database.AppDatabase
+
+	// Secretkey is the key to the HMAC algorithm for JWT generation for user authentication
+	SecretKey string
 }
 
 // Router is the package API interface representing an API handler builder
@@ -71,6 +74,9 @@ func New(cfg Config) (Router, error) {
 	if cfg.Database == nil {
 		return nil, errors.New("database is required")
 	}
+	if cfg.SecretKey == "" {
+		return nil, errors.New("secret key is required")
+	}
 
 	// Create a new router where we will register HTTP endpoints. The server will pass requests to this router to be
 	// handled.
@@ -82,6 +88,7 @@ func New(cfg Config) (Router, error) {
 		router:     router,
 		baseLogger: cfg.Logger,
 		db:         cfg.Database,
+		seckey:		cfg.SecretKey,
 	}, nil
 }
 
@@ -93,4 +100,6 @@ type _router struct {
 	baseLogger logrus.FieldLogger
 
 	db database.AppDatabase
+
+	seckey string
 }
