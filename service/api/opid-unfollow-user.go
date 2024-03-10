@@ -18,7 +18,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	user1Data, err := rt.db.GetUserData(username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows){
-			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
+			http.Error(w, "Provided username is invalid", http.StatusNotFound)
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -27,9 +27,9 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Authorization check failed: %s", err)
+			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -58,5 +58,5 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

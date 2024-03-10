@@ -2,7 +2,9 @@ Field name and boundaries convention for multipart/form-data request bodies.
 This concerns photo uploads by users. Metadata is created client-side.
 
 Update: we're allowing multiple images per request. As such, client will be 
-required to send number of images in custom header field: n-images.
+required to send the number of images in custom header field: "n-images"
+
+Note: "UploadDate" value must be in DATETIME format or equivalent.
 
 
 Content-Type: multipart/form-data; boundary=RMErTosHXEALgcbemszP

@@ -28,3 +28,7 @@ rt.router.DELETE("/photos/:uploader/:photoID/comments/:commentID", rt.uncommentP
 Since we need to identify the requesting user, the username will be required in custom 
 header field:
 "requesting-user"
+---
+
+-OpID uploadPhoto:
+This OpID is detailed in the "multipart-form-data.txt" file.

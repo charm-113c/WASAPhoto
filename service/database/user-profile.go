@@ -15,7 +15,7 @@ type UserProfile struct {
 
 type Photo struct {
 	PhotoID int  
-	// UploaderID string
+	Uploader string
 	BinaryData []byte
 	Description string
 	Likes int

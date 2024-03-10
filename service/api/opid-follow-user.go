@@ -12,7 +12,6 @@ import (
 )
 
 func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
 	// authorization check
 	username := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uData, err := rt.db.GetUserData(username)
@@ -27,9 +26,9 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Authorization check failed: %s", err)
+			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)

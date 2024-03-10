@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"log"
 
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
@@ -22,7 +23,7 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		fmt.Println("Error reading body: ", err)
+		log.Println("Error reading body: ", err)
 		return
 	}
 	username := string(body)
@@ -38,7 +39,7 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 	inDB, err := rt.db.UserInDB(username)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		fmt.Println("Error searching username in DB: ", err)
+		log.Println("Error searching username in DB: ", err)
 		return
 	}
 	if !inDB {
@@ -46,14 +47,14 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 		uid, err := uuid.NewV7()
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			fmt.Println("Error creating userID: ", err)
+			log.Println("Error creating userID: ", err)
 			return 
 		}
 		// add user with nphotos=0
 		err = rt.db.AddUser(username, uid.String()) 
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			fmt.Println("Error adding user to DB: ", err)
+			log.Println("Error adding user to DB: ", err)
 			return
 		}
 	}
@@ -61,7 +62,7 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 	uData, err := rt.db.GetUserData(username)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		fmt.Println("Error getting user data: ", err)
+		log.Println("Error getting user data: ", err)
 		return
 	}
 	// create JWT token for bearer auth 
@@ -69,7 +70,7 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 	signedToken, err := token.SignedString([]byte(rt.seckey))
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		fmt.Println("Error signing JWT token: ", err)
+		log.Println("Error signing JWT token: ", err)
 		return
 	}
 	// return token in response

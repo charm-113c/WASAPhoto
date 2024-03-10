@@ -38,9 +38,9 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Authorization check failed: %s", err)
+			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -55,8 +55,12 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 		log.Println("Error checking user existence: ", err)
 		return
 	}
-	if !ok {
+	switch {
+	case !ok:
 		http.Error(w, "Searched user does not exist", http.StatusBadRequest)
+		return
+	case user == user2:
+		http.Error(w, "You may hate yourself but you can't escape yourself", http.StatusNotAcceptable)
 		return
 	}
 
@@ -89,6 +93,6 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 	fmt.Fprintf(w, "%s blacklisted", user2)
 }

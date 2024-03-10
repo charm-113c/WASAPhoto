@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -37,7 +38,8 @@ func validateToken(r *http.Request, userID string, secret string) error {
 	// check that requesting user == token's subject
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		if claims["userID"] != userID {
-			return errors.New("unauthorized, requesting user-token subject mismatch")
+			log.Println("Unauthorized operation attempt: requesting user mismatch with token subject")
+			return errors.New("unauthorized, token invalid")
 		}
 		return nil
 	} else {

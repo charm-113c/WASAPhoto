@@ -1,9 +1,9 @@
 package database
 
-import (
-	"database/sql"
-	"errors"
-)
+// import (
+// 	"database/sql"
+// 	"errors"
+// )
 
 func (db *appdbimpl) UnlikePhoto(uploaderID string, photoID int, likingUserID string) error {
 	// composite op: deletes a row and decreases a value, so using transactions
@@ -12,18 +12,34 @@ func (db *appdbimpl) UnlikePhoto(uploaderID string, photoID int, likingUserID st
 		return err
 	}
 	// delete Like triple
-	_, err = tx.Exec("DELETE FROM Likes WHERE uploaderID = ? AND photoID = ? AND likingUserID = ?", uploaderID, photoID, likingUserID)
+	r, err := tx.Exec("DELETE FROM Likes WHERE uploaderID = ? AND photoID = ? AND likingUserID = ?", uploaderID, photoID, likingUserID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			// idempotency at work
-			return nil
+		// handle rollback first
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
 		}
 		return err
 	}
+	// checking for idemptoency
+	n, err := r.RowsAffected()
+	if err != nil {
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
+		return err
+	}
+	if n == 0 {
+		// if no row found: do nothing
+		err = tx.Commit()
+		return err
+	}
+
 	// decrement likes in corresponding photo
 	_, err = tx.Exec("UPDATE Photos SET  likes = likes - 1 WHERE userID = ? AND photoID = ?", uploaderID, photoID)
 	if err != nil {
-		tx.Rollback()
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
 		return err
 	}
 	// then commit transaction

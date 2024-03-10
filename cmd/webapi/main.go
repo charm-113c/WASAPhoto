@@ -70,9 +70,9 @@ func run() error {
 		return err
 	}
 	//fmt.Printf("Loaded configuration:  %+v\n", cfg)
-	tail := globaltime.Now()
-	// modify secret key to be randomized
-	currKey := cfg.Web.SecretKey + tail.String()
+	// tail := globaltime.Now()
+	// can modify secret key to be randomized if enabled
+	currKey := cfg.Web.SecretKey //+ tail.String()
 
 	// Init logging
 	logger := logrus.New()
@@ -179,12 +179,12 @@ func run() error {
 		}
 
 		// Log the status of this shutdown.
-		switch {
+		// switch {
 		// case sig == syscall.SIGSTOP:
 		// 	return errors.New("integrity issue caused shutdown")
-		case err != nil:
-			return fmt.Errorf("could not stop server gracefully: %w", err)
-		}
+		// case err != nil:
+		// 	return fmt.Errorf("could not stop server gracefully: %w", err)
+		// }
 	}
 
 	return nil

@@ -7,15 +7,20 @@ func (db *appdbimpl) UploadComment(comment string, commentID int, commenterID st
 		return err
 	}
 	// insert comment 
-	_, err = tx.Exec("INSERT INTO Comments (content, commentID, photoID, photoUploaderID, uploadDate) VALUES (?,?,?,?,?,?)", comment, commentID, commenterID, photoID, uploaderID, uploadDate)
+	_, err = tx.Exec("INSERT INTO Comments (content, commentID, commenterID, photoID, photoUploaderID, uploadDate) VALUES (?,?,?,?,?,?)", comment, commentID, commenterID, photoID, uploaderID, uploadDate)
 	if err != nil {
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
 		return err
 	}
 	// increment photo's comment count by 1
 	// done her for integrity, we have to be able to rollback
 	_, err = tx.Exec("UPDATE Photos SET comments = comments + 1 WHERE photoID = ? AND userID = ?", photoID, uploaderID)
 	if err != nil {
-		tx.Rollback()
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
 		return err
 	}
 	err = tx.Commit()

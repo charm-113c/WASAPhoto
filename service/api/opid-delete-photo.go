@@ -28,9 +28,9 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	err = validateToken(r, userData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Authorization check failed: %s", err)
+			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -54,5 +54,5 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	} 
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

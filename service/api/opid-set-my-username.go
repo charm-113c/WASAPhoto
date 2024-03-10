@@ -27,13 +27,11 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error getting user data: ", err)
 		return
-		
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized"){
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Authorization check failed: %s", err)
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -54,8 +52,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 	newname := string(body)
 	if !usernameIsValid(newname) {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Invalid username: name must be alphanumeric string of 3-30 characters")
+		http.Error(w, "Invalid username: name must be alphanumeric string of 3-30 characters", http.StatusBadRequest)
 		return
 	}
 	
@@ -79,6 +76,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 		log.Println("Error updating username in DB: ", err)
 		return
 	}
-	fmt.Fprintln(w, "Current username: ", currname)
-	fmt.Fprint(w, "New name set, your new username is: ", newname)
+	w.WriteHeader(http.StatusNoContent)
+	// fmt.Fprintln(w, "Current username: ", currname)
+	// fmt.Fprint(w, "New name set, your new username is: ", newname)
 }

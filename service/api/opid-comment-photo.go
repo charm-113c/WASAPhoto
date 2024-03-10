@@ -30,9 +30,9 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	err = validateToken(r, commenterData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Authorization check failed: %s", err)
+			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -65,6 +65,19 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
+	// first, however, check that U2 hasn't banned U1 
+	// (all U1 needs to interact with the photo is the ID, which is public and easy to get)
+	banned, err := rt.db.HasBanned(uploaderData.UserID, commenterData.UserID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		log.Println("Error checking blacklist pair in DB: ", err)
+		return
+	}
+	if banned {
+		http.Error(w, "You are blacklisted by the photo uploader", http.StatusUnauthorized)
+		return
+	}
+
 	// then, get the comment itself 
 	if r.Header.Get("Content-Type") != "text/plain" {
 		http.Error(w, "Content-type invalid, want 'text/plain'", http.StatusBadRequest)
@@ -78,18 +91,22 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	comment := string(raw)
 	// check comment length to see if it's not too long
-	if utf8.RuneCountInString(comment) > 500 {
+	switch {
+	case utf8.RuneCountInString(comment) > 500:
 		http.Error(w, "Comment must not exceed 500 characters", http.StatusRequestEntityTooLarge)
+		return
+	case utf8.RuneCountInString(comment) == 0:
+		http.Error(w, "Comment is empty", http.StatusBadRequest)
 		return
 	}
 
 	// finally, upload to DB + update ncomments
-	err = rt.db.UploadComment(comment, photoData.PhotoID+1, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
+	err = rt.db.UploadComment(comment, photoData.Comments, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error inserting comment: ", err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

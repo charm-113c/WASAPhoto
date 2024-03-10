@@ -9,12 +9,17 @@ func (db *appdbimpl) LikePhoto(uploaderID string, photoID int, likingUserID stri
 	// insert Like tuple
 	_, err = tx.Exec("INSERT INTO Likes (uploaderID, photoID, likingUserID) VALUES (?,?,?)", uploaderID, photoID, likingUserID)
 	if err != nil {
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
 		return err
 	}
-	// and increase number of comments of photo
+	// and increase number of likes of photo
 	_, err = tx.Exec("UPDATE Photos SET likes = likes + 1 WHERE photoID = ? AND userID = ?", photoID, uploaderID) 
 	if err != nil {
-		tx.Rollback()
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
 		return err
 	}
 	err = tx.Commit()
