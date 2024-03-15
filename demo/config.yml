@@ -17,5 +17,3 @@ web:
   shutdowntimeout: 3s
   behindproxy: false
 debug: false
-db:
-  filename: C:/Users/randr/OneDrive/Desktop/Tempest/WASA/WASAPhoto/WASAPhoto/mock/wasaphoto.db
