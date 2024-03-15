@@ -1,12 +1,12 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
-	"fmt"
-	"errors"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -17,7 +17,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	username := strings.TrimPrefix(ps.ByName("username"), "username=")
 	user1Data, err := rt.db.GetUserData(username)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusNotFound)
 			return
 		}
@@ -27,7 +27,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -41,7 +41,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	targetUser := strings.TrimPrefix(ps.ByName("user2"), "user2=")
 	user2Data, err := rt.db.GetUserData(targetUser)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Searched user does not exist", http.StatusNotFound)
 			return
 		}

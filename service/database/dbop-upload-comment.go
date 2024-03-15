@@ -6,7 +6,7 @@ func (db *appdbimpl) UploadComment(comment string, commentID int, commenterID st
 	if err != nil {
 		return err
 	}
-	// insert comment 
+	// insert comment
 	_, err = tx.Exec("INSERT INTO Comments (content, commentID, commenterID, photoID, photoUploaderID, uploadDate) VALUES (?,?,?,?,?,?)", comment, commentID, commenterID, photoID, uploaderID, uploadDate)
 	if err != nil {
 		if rberr := tx.Rollback(); rberr != nil {

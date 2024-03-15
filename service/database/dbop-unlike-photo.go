@@ -33,7 +33,6 @@ func (db *appdbimpl) UnlikePhoto(uploaderID string, photoID int, likingUserID st
 		err = tx.Commit()
 		return err
 	}
-
 	// decrement likes in corresponding photo
 	_, err = tx.Exec("UPDATE Photos SET  likes = likes - 1 WHERE userID = ? AND photoID = ?", uploaderID, photoID)
 	if err != nil {

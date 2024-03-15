@@ -68,8 +68,8 @@ type appdbimpl struct {
 
 type UserData struct {
 	Username string
-	UserID string
-	Nphotos int
+	UserID   string
+	Nphotos  int
 }
 
 // New returns a new instance of AppDatabase based on the SQLite connection `db`.
@@ -157,9 +157,9 @@ func (db *appdbimpl) Ping() error {
 	return db.c.Ping()
 }
 
-/* 
-In each photo, comments have a unique identifier: the number of comments+1 at the time 
-the comment is uploaded. 
+/*
+In each photo, comments have a unique identifier: the number of comments+1 at the time
+the comment is uploaded.
 So, just like photoID, commentIDs aren't unique on their own, but require the photo
 they belong to for uniqueness.
-*/ 
+*/

@@ -12,7 +12,7 @@ func (db *appdbimpl) GetPhotos(userID string) ([]Photo, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var photos []Photo
 	for rows.Next() {
 		var photo Photo

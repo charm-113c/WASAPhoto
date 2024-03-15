@@ -20,7 +20,7 @@ func (db *appdbimpl) GetFollowedPhotos(userID string) ([]Photo, error) {
 		return nil, err
 	}
 	defer rows.Close()
-
+	// loop through rows to get the data
 	var out []Photo
 	for rows.Next() {
 		var photo Photo
@@ -30,6 +30,7 @@ func (db *appdbimpl) GetFollowedPhotos(userID string) ([]Photo, error) {
 		}
 		out = append(out, photo)
 	}
+	// check for errors after loop
 	err = rows.Err()
 	if err != nil {
 		return nil, err

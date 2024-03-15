@@ -6,7 +6,7 @@ import (
 )
 
 func (db *appdbimpl) GetFollowing(userID string) ([]string, error) {
-	// returns list of usernames of user's following
+	// returns list of usernames of user's following (unsorted)
 	var followings []string
 	rows, err := db.c.Query("SELECT u.username FROM Following f LEFT JOIN Users u ON f.followedUserID = u.userID WHERE f.userID = ?", userID)
 	if err != nil {
@@ -16,15 +16,18 @@ func (db *appdbimpl) GetFollowing(userID string) ([]string, error) {
 		return nil, err
 	}
 	defer rows.Close()
-
+	// loop through each row
 	for rows.Next() {
 		var following string
+		// put the value into following
 		err = rows.Scan(&following)
 		if err != nil {
 			return nil, err
 		}
+		// update followings
 		followings = append(followings, following)
 	}
+	// check for errors after loop
 	err = rows.Err()
 	if err != nil {
 		return nil, err

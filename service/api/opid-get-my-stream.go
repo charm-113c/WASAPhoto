@@ -1,14 +1,14 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
-	"errors"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -19,7 +19,7 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 	user := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uData, err := rt.db.GetUserData(user)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -29,7 +29,7 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -67,5 +67,5 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 		log.Println("Error sending user's stream: ", err)
 		return
 	}
-	
+
 }

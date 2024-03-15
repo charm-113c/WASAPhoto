@@ -29,7 +29,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 	err = validateToken(r, likeUserData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -40,7 +40,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// then get uploader's data in order to like photo
-	up := strings.TrimPrefix(ps.ByName("uploader"), "uploader=")
+	up := r.Header.Get("uploader")
 	uploaderData, err := rt.db.GetUserData(up)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -48,14 +48,14 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 	pID := strings.TrimPrefix(ps.ByName("photoID"), "photoID=")
-	photoID, err := strconv.Atoi(pID) 
+	photoID, err := strconv.Atoi(pID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Atoi conversion error: ", err)
 		return
 	}
 
-	// first, however, check that U2 hasn't banned U1 
+	// first, however, check that U2 hasn't banned U1
 	// (all U1 needs to interact with the photo is the ID, which is public and easy to get)
 	banned, err := rt.db.HasBanned(uploaderData.UserID, likeUserData.UserID)
 	if err != nil {

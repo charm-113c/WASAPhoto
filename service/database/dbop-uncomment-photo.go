@@ -27,7 +27,6 @@ func (db *appdbimpl) UncommentPhoto(uploaderID string, photoID int, commentID in
 		err = tx.Commit()
 		return err
 	}
-
 	// decrement corresponding photo's ncomments in Photos
 	_, err = tx.Exec("UPDATE Photos SET comments = comments - 1 WHERE userID = ? AND photoID = ?", uploaderID, photoID)
 	if err != nil {
@@ -36,7 +35,7 @@ func (db *appdbimpl) UncommentPhoto(uploaderID string, photoID int, commentID in
 		}
 		return err
 	}
-
+	// commit
 	err = tx.Commit()
 	return err
 }

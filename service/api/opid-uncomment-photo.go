@@ -12,13 +12,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// rt.router.DELETE("/photos/:uploader/:photoID/comments/:commentID", rt.uncommentPhoto)
+// rt.router.DELETE("/photos/:photoID/comments/:commentID", rt.uncommentPhoto)
 func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// authenticate requesting user
 	user := r.Header.Get("requesting-user")
 	user1Data, err := rt.db.GetUserData(user)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -28,7 +28,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -38,11 +38,11 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	// get uploader's ID 
-	uploader := strings.TrimPrefix(ps.ByName("uploader"), "uploader=")
+	// get uploader's ID
+	uploader := r.Header.Get("uploader")
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Searched user does not exist", http.StatusNotFound)
 			return
 		}

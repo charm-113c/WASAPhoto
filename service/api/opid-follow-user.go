@@ -1,12 +1,12 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
-	"errors"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -16,7 +16,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	username := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uData, err := rt.db.GetUserData(username)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -26,7 +26,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -40,14 +40,14 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	target_user := strings.TrimPrefix(ps.ByName("user2"), "user2=")
 	exist, err := rt.db.UserInDB(target_user)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Searched user does not exist", http.StatusNotFound)
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error checking user's presence in DB: ", err)
 		return
-	}	
+	}
 	if !exist {
 		http.Error(w, "Searched user does not exist", http.StatusNotFound)
 		return
@@ -57,7 +57,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	// get user1 and 2's ID 
+	// get user1 and 2's ID
 	user1Data, err := rt.db.GetUserData(username)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -95,7 +95,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 		}
 		http.Error(w, "Someting went wrong", http.StatusInternalServerError)
 		log.Println("Error adding follow pair in DB: ", err)
-		return 
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

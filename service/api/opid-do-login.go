@@ -3,15 +3,15 @@ package api
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"log"
+	"net/http"
 
 	"github.com/gofrs/uuid"
-	"github.com/julienschmidt/httprouter"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Logs in a user given a username. If username isn't in DB, we create a new user
 	w.Header().Set("Content-type", "text/plain")
 
@@ -48,10 +48,10 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error creating userID: ", err)
-			return 
+			return
 		}
 		// add user with nphotos=0
-		err = rt.db.AddUser(username, uid.String()) 
+		err = rt.db.AddUser(username, uid.String())
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error adding user to DB: ", err)
@@ -65,8 +65,8 @@ func (rt *_router) doLogin (w http.ResponseWriter, r *http.Request, ps httproute
 		log.Println("Error getting user data: ", err)
 		return
 	}
-	// create JWT token for bearer auth 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"userID":uData.UserID})
+	// create JWT token for bearer auth
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"userID": uData.UserID})
 	signedToken, err := token.SignedString([]byte(rt.seckey))
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)

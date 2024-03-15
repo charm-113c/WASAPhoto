@@ -3,11 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/ardanlabs/conf"
-	"gopkg.in/yaml.v2"
 	"io"
+	"log"
 	"os"
 	"time"
+
+	"github.com/ardanlabs/conf"
+	"gopkg.in/yaml.v2"
 )
 
 // WebAPIConfiguration describes the web API configuration. This structure is automatically parsed by
@@ -19,7 +21,7 @@ type WebAPIConfiguration struct {
 	Web struct {
 		APIHost         string        `conf:"default:0.0.0.0:3000"`
 		DebugHost       string        `conf:"default:0.0.0.0:4000"`
-		SecretKey 		string		  `conf:"default:the answer to life the universe and everything"`
+		SecretKey       string        `conf:"default:the answer to life the universe and everything"`
 		ReadTimeout     time.Duration `conf:"default:5s"`
 		WriteTimeout    time.Duration `conf:"default:5s"`
 		ShutdownTimeout time.Duration `conf:"default:5s"`
@@ -45,7 +47,7 @@ func loadConfiguration() (WebAPIConfiguration, error) {
 			if err != nil {
 				return cfg, fmt.Errorf("generating config usage: %w", err)
 			}
-			fmt.Println(usage) //nolint:forbidigo
+			log.Println(usage) //nolint:forbidigo
 			return cfg, conf.ErrHelpWanted
 		}
 		return cfg, fmt.Errorf("parsing config: %w", err)

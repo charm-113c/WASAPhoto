@@ -6,7 +6,6 @@ func (db *appdbimpl) DeletePhoto(userID string, photoID int) error {
 	if err != nil {
 		return err
 	}
-
 	// delete from Photos table
 	rows, err := tx.Exec("DELETE FROM Photos WHERE userID = ? AND photoID = ?", userID, photoID)
 	if err != nil {
@@ -14,7 +13,7 @@ func (db *appdbimpl) DeletePhoto(userID string, photoID int) error {
 		if rberr := tx.Rollback(); rberr != nil {
 			return rberr
 		}
-		return err 
+		return err
 	}
 	nRows, err := rows.RowsAffected()
 	if err != nil {
@@ -31,29 +30,28 @@ func (db *appdbimpl) DeletePhoto(userID string, photoID int) error {
 
 	// else proceed to eliminate likes, comments
 	_, err = tx.Exec("DELETE FROM Likes WHERE uploaderID = ? AND photoID = ?", userID, photoID)
-	if err != nil { 
+	if err != nil {
 		if rberr := tx.Rollback(); rberr != nil {
 			return rberr
 		}
 		return err
 	}
 	_, err = tx.Exec("DELETE FROM Comments WHERE photoUploaderID = ? AND photoID = ?", userID, photoID)
-	if err != nil { 
+	if err != nil {
 		if rberr := tx.Rollback(); rberr != nil {
 			return rberr
 		}
 		return err
 	}
-	// and decrement nphotos 
+	// and decrement nphotos
 	_, err = tx.Exec("UPDATE Users SET nphotos = nphotos - 1 WHERE userID = ?", userID)
-	if err != nil { 
+	if err != nil {
 		if rberr := tx.Rollback(); rberr != nil {
 			return rberr
-		} 
+		}
 		return err
 	}
-
-	// and commit transactions 
+	// and commit transactions
 	err = tx.Commit()
-	return err 
+	return err
 }
