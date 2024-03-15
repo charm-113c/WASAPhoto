@@ -88,7 +88,7 @@ func New(cfg Config) (Router, error) {
 		router:     router,
 		baseLogger: cfg.Logger,
 		db:         cfg.Database,
-		seckey:		cfg.SecretKey,
+		seckey:     cfg.SecretKey,
 	}, nil
 }
 

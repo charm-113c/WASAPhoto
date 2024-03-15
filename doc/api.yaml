@@ -1,9 +1,10 @@
 components:
-
   schemas:
+
     UsernameFormat:
-      description: |-
-        The required format of a username
+      description: |- 
+        The required format of a username. Does it need to have a certain length 
+        before being recognized as a proper description? No, that's not it. 
       type: string
       example: Sir Wilburt Coddington III
       pattern: '^[a-zA-Z0-9 ]+$'
@@ -18,7 +19,8 @@ components:
         username:
           $ref: "#/components/schemas/UsernameFormat"
         nphotos:
-          description: Number of photos of user
+          description: |- 
+            Number of photos of user
           type: integer
           example: 42
         photos:
@@ -60,7 +62,7 @@ components:
           type: string
           pattern: "[01]*"
           minLength: 1
-          maxLength: 9999
+          maxLength: 99999999
           format: binary
         photoDescription:
           description: Optional, a text to accompany the photo
@@ -97,6 +99,9 @@ components:
         text/plain:
           schema:
             type: string
+            pattern: ^[a-zA-Z0-9.,!?;:'"\s-]+$
+            minLength: 3
+            maxLength: 50
             example: (400) Username invalid
     Unauthorised:
       description: (401) Operation unauthorised, identifier missing or invalid
@@ -104,6 +109,9 @@ components:
         text/plain:
           schema:
             type: string
+            pattern: ^[a-zA-Z0-9.,!?;:'"\s-]+$
+            minLength: 3
+            maxLength: 50
             example: (401) Operation unauthorised, identifier missing or invalid
     NotFound:
       description: (404) Resource not found
@@ -111,6 +119,9 @@ components:
         text/plain:
           schema:
             type: string
+            pattern: ^[a-zA-Z0-9.,!?;:'"\s-]+$
+            minLength: 3
+            maxLength: 50
             example: (404) Resource not found
     RequestEntityTooLarge:
       description: (413) Request entity too large
@@ -118,6 +129,9 @@ components:
         text/plain:
           schema:
             type: string
+            pattern: ^[a-zA-Z0-9.,!?;:'"\s-]+$
+            minLength: 3
+            maxLength: 50
             example: (404) Request entity too large
         
   securitySchemes:
@@ -160,6 +174,8 @@ paths:
                   identifier:
                     type: string
                     format: JWT
+                    minLength: 20
+                    maxLength: 999
         "400":
           $ref: "#/components/responses/InvalidUsername"
 
@@ -176,7 +192,7 @@ paths:
       summary: Changes current user's username
       description: |
         Allows user to change their username. It cannot be the same as the current username.
-      operationId: setMyUsername
+      operationId: setMyUserName
       requestBody:
         description: New username
         content:
@@ -197,13 +213,13 @@ paths:
     parameters:
     - name: username
       in: path
-      description: Current user's username
+      description: Target user's username
       required: True
       schema:
         $ref: "#/components/schemas/UsernameFormat"
     - name: requesting-user
       in: header
-      description: requesting user's username
+      description: Searching user's username
       required: True
       schema:
         $ref: "#/components/schemas/UsernameFormat"
@@ -265,6 +281,7 @@ paths:
                     Number of images user is uploading
                 Description:
                   type: string
+                  pattern: ^[a-zA-Z0-9.,!?;:'"\s-]+$
                   minLength: 0
                   maxLength: 500
                   description: |
@@ -272,22 +289,38 @@ paths:
                 UploadDate:
                   type: string
                   format: date-time
+                  minLength: 20
+                  maxLength: 20
                   description: |
                       Date at which upload is performed. Generated client-sid.
                 UploadedImagei:
                   type: string
                   format: binary
+                  pattern: "[01]*"
+                  minLength: 1
+                  maxLength: 99999999
                   description: |
                     The image files will be contained here, and there will be as many of these fields as there are images. "i" specifies the index of each image and must be replaced by corresponding integer (i.e. UploadedImage1, UploadedImage2...)
       responses:
-        "204":
-          description: Images uploaded succesfully
+        "201":
+          description: Image(s) succesfully uploaded
+          content: 
+            text/plain:
+              schema:
+                type: string
+                pattern: '^[a-zA-Z0-9 ]+$'
+                minLength: 3
+                maxLength: 30  
+                example: Image(s) successfully uploaded
         "400":
           description: Bad request
           content:
             text/plain:
               schema:
                 type: string
+                pattern: '^[a-zA-Z0-9 ]+$'
+                minLength: 3
+                maxLength: 30  
                 example: Invalid header field values
         "401":
           $ref: "#/components/responses/Unauthorised"
@@ -368,6 +401,8 @@ paths:
           $ref: "#/components/responses/Unauthorised"
         "404":
           $ref: "#/components/responses/InvalidUsername"
+      security:
+        - identifier: []
         
   /users/{username}/stream:
     parameters:
@@ -444,12 +479,12 @@ paths:
       security:
         - identifier: []
       
-  /photos/{uploader}/{photoID}/likes/{username}:
+  /photos/{photoID}/likes/{username}:
     parameters:
     - name: uploader
-      in: path
+      in: header
       required: true
-      description: Photo uploader's username
+      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
       schema:
         $ref: "#/components/schemas/UsernameFormat"
     - name: photoID
@@ -493,12 +528,12 @@ paths:
       security:
         - identifier: []
         
-  /photos/{uploader}/{photoID}/comments:
+  /photos/{photoID}/comments:
     parameters:
     - name: uploader
-      in: path
+      in: header
       required: true
-      description: Photo uploader's username
+      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
       schema:
         $ref: "#/components/schemas/UsernameFormat"
     - name: photoID
@@ -522,6 +557,8 @@ paths:
       schema:
         type: string
         format: date-time
+        minLength: 20
+        maxLength: 20
     post:
       tags: ["U2Photo"]
       summary: Add a comment to a photo
@@ -529,24 +566,37 @@ paths:
         Post a comment to the photo with given ID. This will automatically generate a commentID. Note that the request body (i.e. the comment) cannot be empty.
       operationId: commentPhoto
       requestBody:
-        description: Comment's text
+        description: |
+          Comment's text
         required: true
         content:
           text/plain:
             schema:
               type: string
+              pattern: '^[a-zA-Z0-9\s]*$'
               minLength: 1
               maxLength: 500
               example: Nice picture Bob.
       responses:
-        "204":
-          description: Comment uploaded successfully.
+        "201":
+          description: Comment successfully uploaded
+          content:
+            text/plain:
+              schema:
+                type: string
+                minLength: 3
+                maxLength: 50
+                pattern: '^[a-zA-Z0-9\s]*$'
+                example: Comment successfully uploaded 
         "400":
           description: Comment cannot be empty
           content:
             text/plain:
               schema:
                 type: string
+                minLength: 3
+                maxLength: 50
+                pattern: '^[a-zA-Z0-9\s]*$'
                 example: Comment cannot be empty
               
         "401":
@@ -556,12 +606,12 @@ paths:
       security:
         - identifier: []
         
-  /photos/{uploader}/{photoID}/comments/{commentID}:
+  /photos/{photoID}/comments/{commentID}:
     parameters: 
     - name: uploader
-      in: path
+      in: header
       required: true
-      description: Photo uploader's username
+      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
       schema:
         $ref: "#/components/schemas/UsernameFormat"
     - name: photoID
@@ -599,4 +649,3 @@ paths:
           $ref: "#/components/responses/Unauthorised"
       security:
         - identifier: []
-    

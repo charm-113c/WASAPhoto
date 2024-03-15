@@ -15,7 +15,7 @@ func (db *appdbimpl) LikePhoto(uploaderID string, photoID int, likingUserID stri
 		return err
 	}
 	// and increase number of likes of photo
-	_, err = tx.Exec("UPDATE Photos SET likes = likes + 1 WHERE photoID = ? AND userID = ?", photoID, uploaderID) 
+	_, err = tx.Exec("UPDATE Photos SET likes = likes + 1 WHERE photoID = ? AND userID = ?", photoID, uploaderID)
 	if err != nil {
 		if rberr := tx.Rollback(); rberr != nil {
 			return rberr

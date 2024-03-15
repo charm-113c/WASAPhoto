@@ -1,24 +1,24 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"errors"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-// rt.router.DELETE("/photos/:uploader/:photoID/likes/:username", rt.unlikePhoto)
+// rt.router.DELETE("/photos/:photoID/likes/:username", rt.unlikePhoto)
 func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// authenticate liking user
-	username := strings.TrimPrefix(ps.ByName("username"),"username=")
+	username := strings.TrimPrefix(ps.ByName("username"), "username=")
 	likingUserData, err := rt.db.GetUserData(username)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -28,7 +28,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	err = validateToken(r, likingUserData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -38,7 +38,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	// identify the photo 
+	// identify the photo
 	pID := strings.TrimPrefix(ps.ByName("photoID"), "photoID=")
 	photoID, err := strconv.Atoi(pID)
 	if err != nil {
@@ -46,7 +46,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		log.Println("Atoi conversion error: ", err)
 		return
 	}
-	uploader := strings.TrimPrefix(ps.ByName("uploader"), "uploader=")
+	uploader := r.Header.Get("uploader")
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)

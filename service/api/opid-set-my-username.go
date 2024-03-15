@@ -1,13 +1,13 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strings"
-	"errors"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -20,7 +20,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	currname := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uData, err := rt.db.GetUserData(currname)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -30,19 +30,19 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
 		}
 		return
-	} 
+	}
 
 	// check new name validity
 	if r.Header.Get("Content-type") != "text/plain" {
 		http.Error(w, "Content-type invalid, want 'text/plain'", http.StatusBadRequest)
-		return 
+		return
 	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -55,10 +55,10 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 		http.Error(w, "Invalid username: name must be alphanumeric string of 3-30 characters", http.StatusBadRequest)
 		return
 	}
-	
+
 	// check if new name already present in DB
 	inDB, err := rt.db.UserInDB(newname)
-	if err != nil{
+	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		fmt.Println("Error searching username in DB: ", err)
 		return

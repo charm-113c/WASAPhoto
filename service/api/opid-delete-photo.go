@@ -1,13 +1,13 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"errors"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -18,7 +18,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	username := strings.TrimPrefix(ps.ByName("username"), "username=")
 	userData, err := rt.db.GetUserData(username)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -28,7 +28,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	err = validateToken(r, userData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -52,7 +52,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error deleting photo from DB: ", err)
 		return
-	} 
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }

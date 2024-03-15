@@ -69,7 +69,7 @@ func run() error {
 		}
 		return err
 	}
-	//fmt.Printf("Loaded configuration:  %+v\n", cfg)
+	// fmt.Printf("Loaded configuration:  %+v\n", cfg)
 	// tail := globaltime.Now()
 	// can modify secret key to be randomized if enabled
 	currKey := cfg.Web.SecretKey //+ tail.String()
@@ -116,8 +116,8 @@ func run() error {
 
 	// Create the API router
 	apirouter, err := api.New(api.Config{
-		Logger:   logger,
-		Database: db,
+		Logger:    logger,
+		Database:  db,
 		SecretKey: currKey,
 	})
 	if err != nil {

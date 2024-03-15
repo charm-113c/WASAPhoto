@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -8,19 +10,17 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-	"errors"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-// rt.router.POST("/photos/:uploader/:photoID/comments", rt.commentPhoto)
+// rt.router.POST("/photos/:photoID/comments", rt.commentPhoto)
 func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// authenticate requester
 	commenter := r.Header.Get("commenter-username")
 	commenterData, err := rt.db.GetUserData(commenter)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -30,7 +30,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	err = validateToken(r, commenterData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -41,7 +41,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// retrieve metadata from URI
-	uploader := strings.TrimPrefix(ps.ByName("uploader"), "uploader=")
+	uploader := r.Header.Get("uploader")
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -65,7 +65,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	// first, however, check that U2 hasn't banned U1 
+	// first, however, check that U2 hasn't banned U1
 	// (all U1 needs to interact with the photo is the ID, which is public and easy to get)
 	banned, err := rt.db.HasBanned(uploaderData.UserID, commenterData.UserID)
 	if err != nil {
@@ -78,7 +78,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	// then, get the comment itself 
+	// then, get the comment itself
 	if r.Header.Get("Content-Type") != "text/plain" {
 		http.Error(w, "Content-type invalid, want 'text/plain'", http.StatusBadRequest)
 		return

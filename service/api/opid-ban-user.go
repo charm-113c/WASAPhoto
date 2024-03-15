@@ -1,12 +1,12 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
-	"database/sql"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -18,17 +18,17 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	user2 := strings.TrimPrefix(ps.ByName("user2"), "user2=")
 	user1Data, err := rt.db.GetUserData(user)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error getting user data")
 		return
-	} 
+	}
 	user2Data, err := rt.db.GetUserData(user2)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Searched user does not exist", http.StatusNotFound)
 			return
 		}
@@ -38,7 +38,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {

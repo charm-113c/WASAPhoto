@@ -1,14 +1,14 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
-	"errors"
-	"database/sql"
 
 	"github.com/R-Andom13/WASAPhoto/service/database"
 	"github.com/julienschmidt/httprouter"
@@ -20,13 +20,13 @@ To enforce authorization, Client will be required to send requesting user's user
 in header field "username".
 */
 
-func (rt *_router ) getUserProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// after authorization check, see if current user is in target user's blacklist
 	// in which case return 'banned' message.
 	user := strings.TrimPrefix(r.Header.Get("requesting-user"), "requesting-user ")
 	uData, err := rt.db.GetUserData(user)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows){
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
 			return
 		}
@@ -36,7 +36,7 @@ func (rt *_router ) getUserProfile(w http.ResponseWriter, r *http.Request, ps ht
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
-		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid"){
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
 		} else {
@@ -44,8 +44,8 @@ func (rt *_router ) getUserProfile(w http.ResponseWriter, r *http.Request, ps ht
 			log.Println("Error performing authorization check: ", err)
 		}
 		return
-	} 
-	
+	}
+
 	// let's focus on target now
 	target_user := strings.TrimPrefix(ps.ByName("username"), "username=")
 	// check user2 existence
@@ -99,11 +99,11 @@ func (rt *_router ) getUserProfile(w http.ResponseWriter, r *http.Request, ps ht
 	})
 
 	// then we need target's followers and following
-	followers, err := rt.db.GetFollowers(targetUserData.UserID) 
+	followers, err := rt.db.GetFollowers(targetUserData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error getting user's followers: ", err)
-		return 
+		return
 	}
 	following, err := rt.db.GetFollowing(targetUserData.UserID)
 	if err != nil {
@@ -113,18 +113,18 @@ func (rt *_router ) getUserProfile(w http.ResponseWriter, r *http.Request, ps ht
 	}
 
 	// now that we have all we need, we json and marshal
-	targetProfile := &database.UserProfile {
-			Username: target_user,
-			Photos: targetPhotos,
-			Nphotos: targetUserData.Nphotos,
-			Followers: followers,
-			Following: following,
-		}
+	targetProfile := &database.UserProfile{
+		Username:  target_user,
+		Photos:    targetPhotos,
+		Nphotos:   targetUserData.Nphotos,
+		Followers: followers,
+		Following: following,
+	}
 	out, err := json.Marshal(targetProfile)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error marshalling user profile: ", err)
-		return 
+		return
 	}
 
 	// and finally send out
@@ -132,6 +132,6 @@ func (rt *_router ) getUserProfile(w http.ResponseWriter, r *http.Request, ps ht
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error outputing user profile: ", err)
-		return 
+		return
 	}
 }
