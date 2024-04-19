@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 // and incrementing the number of likes in Photo's db
 func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// authenticate liking user
-	likeuser := strings.TrimPrefix(ps.ByName("username"), "username=")
+	likeuser := strings.TrimPrefix(ps.ByName("liker"), "liker=")
 	likeUserData, err := rt.db.GetUserData(likeuser)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -30,8 +29,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 	err = validateToken(r, likeUserData.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -40,7 +38,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// then get uploader's data in order to like photo
-	up := r.Header.Get("uploader")
+	up := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uploaderData, err := rt.db.GetUserData(up)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)

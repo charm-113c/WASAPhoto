@@ -1,0 +1,88 @@
+<template>
+    <form @submit.prevent="doLogin">
+        <label for="username">Username:</label>
+        <input type="text" id="username" required v-model="username" placeholder="Username">
+        <!-- <button class="submit" @click="doLogin">Login</button> -->
+        <br>
+        <p>Log in to WASAPhoto! Whether you're a new user or not, entering a username is all it takes!</p>
+    </form>
+    <ErrorMsg v-if="errorMsg" :msg="errorMsg" :code="errorCode"></ErrorMsg>
+</template>
+
+<script>
+export default {
+    data() {
+        return {
+            username: '',
+            errorCode: null,
+            errorMsg: null
+        }
+    },
+    methods: {
+        async doLogin() {
+            try {
+                let res = await this.$axios.post("/login",
+                    this.username, // request body
+                    {headers: {'Content-Type': 'text/plain'}}) 
+                // get user's token
+                sessionStorage.setItem('username', this.username)
+                sessionStorage.setItem('bearerToken', res.data)
+                this.directToStream()
+            } catch (error) {
+                if (error.response) { 
+                    // check if the error is from the response
+                    this.errorCode = error.response.status
+                    this.errorMsg = error.response.data
+                } else if (error.request) {
+                    // or from the request itself
+                    this.errorCode = 400
+                    this.errorMsg = error.request
+                } else {
+                    // or something else entirely
+                    this.errorCode = 500 // when in doubt throw a 500
+                    this.errorMsg = error.message
+                }
+            }
+        },
+        directToStream() {
+            // before routing, we also trigger an event to tell the App to display 
+            // Stream and eliminate the Login view
+            this.$emit('loggedIn')
+            this.$router.push({name: 'stream', params: {username: this.username}})
+        },
+    }
+}
+</script>
+
+<style scoped>
+form {
+    margin: 70px auto;
+    background-color: var(--strong-colour);
+    color: var(--light-colour);
+    text-align: left;
+    padding: 40px;
+    border-radius: 5px;
+}
+label {
+    color: var(--light-colour);
+    display: inline-block;
+    margin: 25px 0 15px;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+}
+input {
+    display: block;
+    padding: 10px 6px;
+    width: 50%;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 3px;
+    border-bottom: 1px solid #2c3e50;
+    color: var(--strong-colour);
+}
+p {
+    color: var(--light-colour);
+}
+</style>

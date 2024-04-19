@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -37,8 +36,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -80,7 +78,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 	if banned {
-		fmt.Fprintf(w, "%s has blacklisted you", target_user)
+		http.Error(w, "This user has blacklisted you", http.StatusForbidden)
 		return
 	}
 
@@ -112,7 +110,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	// now that we have all we need, we json and marshal
+	// now that we have all we need, we marshal it
 	targetProfile := &database.UserProfile{
 		Username:  target_user,
 		Photos:    targetPhotos,

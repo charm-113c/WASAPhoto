@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -11,10 +12,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// authenticate requesting user
-	user := r.Header.Get("requesting-user")
-	user1Data, err := rt.db.GetUserData(user)
+// gets a chosen photo, with all the comments associated to it
+func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// as usual start with authentication
+	username := strings.TrimPrefix(r.Header.Get("requesting-user"), "requesting-user ")
+	uData, err := rt.db.GetUserData(username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Provided username is invalid", http.StatusBadRequest)
@@ -24,7 +26,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 		log.Println("Error getting user data: ", err)
 		return
 	}
-	err = validateToken(r, user1Data.UserID, rt.seckey)
+	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
@@ -34,13 +36,12 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 		}
 		return
 	}
-
-	// get uploader's ID
-	uploader := strings.TrimPrefix(ps.ByName("username"), "username=")
-	uploaderData, err := rt.db.GetUserData(uploader)
+	// get uploader data
+	uploader := strings.TrimPrefix(ps.ByName("username"), "username ")
+	u2Data, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "Searched user does not exist", http.StatusNotFound)
+			http.Error(w, "Uploader username in header is invalid", http.StatusBadRequest)
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -55,22 +56,24 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 		log.Println("Atoi conversion error: ", err)
 		return
 	}
-	// same for commentID
-	cID := strings.TrimPrefix(ps.ByName("commentID"), "commentID=")
-	commentID, err := strconv.Atoi(cID)
+	// finally, get photo
+	photoWithCom, err := rt.db.GetPhotoWithComments(u2Data.UserID, photoID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi conversion error: ", err)
+		log.Println("Error getting selected photo: ", err)
 		return
 	}
-
-	// proceed to uncomment
-	err = rt.db.UncommentPhoto(uploaderData.UserID, photoID, commentID)
+	// and prepare to send it out
+	out, err := json.Marshal(photoWithCom)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error uncommenting photo in DB: ", err)
+		log.Println("Error marshaling photo with comments: ", err)
 		return
 	}
-
-	w.WriteHeader(http.StatusNoContent)
+	// and send
+	_, err = w.Write(out)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		log.Println("Error writing out photo with comments: ", err)
+	}
 }

@@ -19,16 +19,27 @@ type Photo struct {
 	BinaryData    []byte
 	Description   string
 	Likes         int
+	Likers        string
 	UploadDate    time.Time
 	FileExtension string
 	Comments      int
 }
 
-// sorry for the disturbance
-// ################### CREATE OPID GETPHOTO OR GETCOMMENTS
 type Comment struct {
-	CommentID   int
-	CommentText string
-	UploaderID  string
-	UploadDate  time.Time
+	CommentID   	int
+	CommentText 	string
+	CommenterName  	string
+	CommentDate  	time.Time
+}
+
+type PhotoWithComments struct {
+	PhotoID       int
+	Uploader      string
+	BinaryData    []byte
+	Description   string
+	Likes         int
+	Likers        []string
+	UploadDate    time.Time
+	FileExtension string
+	Comments      []Comment
 }

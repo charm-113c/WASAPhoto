@@ -1,3 +1,514 @@
+openapi: 3.0.3
+info:
+  title: WASAPhoto
+  description: |-
+    Keep in touch with your friends by sharing photos of special moments, thanks to WASAPhoto! You can upload your photos directly from your PC, and they will be visible to everyone following you!
+  version: 1.0.0
+paths:
+  /login:
+    post:
+      tags: ["Session"]
+      summary: Logs in the user
+      description: |      
+        If the user does not exist, it will be created, and an identifier (a JSON web token) is returned. If the user exists, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          text/plain:
+            schema:
+              $ref: "#/components/schemas/UsernameFormat"
+        required: true
+      responses:
+        '201':
+          description: User log-in action successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  identifier:
+                    type: string
+                    format: JWT
+                    minLength: 20
+                    maxLength: 999
+        "400":
+          $ref: "#/components/responses/InvalidUsername"
+
+  /users/{username}/username:
+    parameters:
+    - name: username
+      in: path
+      description: Current user's username
+      required: True
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    put:
+      tags: ["U2Self"]
+      summary: Changes current user's username
+      description: |
+        Allows user to change their username. It cannot be the same as the current username.
+      operationId: setMyUserName
+      requestBody:
+        description: New username
+        content:
+          text/plain:
+            schema:
+              $ref: "#/components/schemas/UsernameFormat"
+      responses:
+        "204":
+          description: New username set
+        "400":
+          $ref: "#/components/responses/InvalidUsername"
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+  /users/{username}/profile:
+    parameters:
+    - name: username
+      in: path
+      description: Target user's username
+      required: True
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: requesting-user
+      in: header
+      description: Searching user's username
+      required: True
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    get:
+      tags: ["U2U"]
+      summary: Get searched user's profile
+      description: |
+        Specify searched user in path parameter, and for authentication set requesting user's username in header field "requesting-user".
+      operationId: getUserProfile
+      responses:
+        "200":
+          description: Searched user's profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          $ref: "#/components/responses/InvalidUsername"
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+  /users/{username}/photos:
+    parameters:
+    - name: username
+      in: path
+      description: Current user's username
+      required: True
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    post:
+      tags: ["U2Self"]
+      summary: Post a photo to the profile.
+      description: |
+        Post a new photo to the profile. Note that the photoID is automatically generated server-side, so client doesn't need to worry about it.   
+      operationId: uploadPhoto
+      requestBody:
+        description: |
+          Uploaded photo(s) alongside metadata
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties: 
+                Description:
+                  type: string
+                  pattern: ^[a-zA-Z0-9.,!?;:'"\s-]+$
+                  minLength: 0
+                  maxLength: 500
+                  description: |
+                    Optional description accompanying image. 
+                UploadDate:
+                  type: string
+                  format: date-time
+                  minLength: 20
+                  maxLength: 20
+                  description: |
+                      Date at which upload is performed. Generated client-side.
+                UploadedImage:
+                  type: string
+                  format: binary
+                  pattern: "[01]*"
+                  minLength: 1
+                  maxLength: 99999999
+                  description: |
+                    The image file's data will be contained in this field.
+      responses:
+        "201":
+          description: Image(s) succesfully uploaded
+          content: 
+            text/plain:
+              schema:
+                type: string
+                pattern: '^[a-zA-Z0-9 ]+$'
+                minLength: 3
+                maxLength: 30  
+                example: Image(s) successfully uploaded
+        "400":
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+                pattern: '^[a-zA-Z0-9 ]+$'
+                minLength: 3
+                maxLength: 30  
+                example: Invalid header field values
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+  /users/{username}/photos/{photoID}:
+    parameters:
+    - name: username
+      in: path
+      required: true
+      description:  Photo uploader's username <- photoID not unique on its own, but unique for each user
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: photoID
+      in: path
+      description: ID of the photo
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 9999
+    get:
+      parameters:
+        - name: requesting-user
+          in: header
+          required: true
+          description: username of user making request
+          schema:
+            $ref: "#/components/schemas/UsernameFormat"
+      tags: ["U2Photo"]
+      summary: Get a selected photo 
+      description: Get a selected photo with, in addition, its comments 
+      operationId: getPhoto
+      responses:
+        "200":
+          description: Photo retrieved
+          content: 
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+    delete:
+      tags: ["U2Self"]
+      operationId: deletePhoto
+      summary: Delete given photo
+      description: |
+        Delete photo with specified ID. If no such photo exists or it has already been deleted, the operation is still considered successful
+      responses:
+        "204":
+          description: Photo deleted
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+  /users/{username}/following/{user2}:
+    parameters:
+    - name: username
+      in: path
+      required: true
+      description: Current user's username
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: user2
+      in: path
+      required: true
+      description: Searched user's username
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    put:
+      tags: ["U2U"]
+      summary: Follow given user
+      description: |
+        Add searched user to followed
+      operationId: followUser
+      responses:
+        "204":
+          description: User followed
+        "400":
+          $ref: "#/components/responses/InvalidUsername"
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      security:
+        - identifier: []
+    delete:
+      tags: ["U2U"]
+      summary: Unfollow given user
+      description: |
+        Remove searched user from follow list. If user has already been unfollowed the operation is considerd successful. If username isn't found it is specified in the response.
+      operationId: unfollowUser
+      responses:
+        "204":
+          description: User unfollowed
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+        "404":
+          $ref: "#/components/responses/InvalidUsername"
+      security:
+        - identifier: []
+        
+  /users/{username}/stream:
+    parameters:
+    - name: username
+      in: path
+      required: true
+      description: Current user's username
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    get:
+      tags: ["U2Self"]
+      operationId: getMyStream
+      summary: Get one's stream
+      description: |
+        Get current user's stream
+      responses:
+        "200":
+          description: User's stream retrieved
+          content: 
+            application/json:
+              schema:
+                type: array
+                minItems: 0
+                maxItems: 9999
+                items:
+                  $ref: "#/components/schemas/Photo"
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+  /users/{username}/blacklist/{user2}:
+    parameters:
+    - name: username
+      in: path
+      required: true
+      description: Current user's username
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: user2
+      in: path
+      required: true
+      description: Target user's username
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    put:
+      tags: ["U2U"]
+      operationId: banUser
+      summary: Ban target user
+      description: |
+        Add target user to blacklist. If target user has already been blacklisted, the operation is considered successful. If user doesn't exist (username not found) it is specified in response.  
+      responses:
+        "204":
+          description: User blacklisted
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+        "404":
+          $ref: "#/components/responses/InvalidUsername"
+      security:
+        - identifier: []
+    delete:
+      tags: ["U2U"]
+      operationId: unbanUser
+      summary: Unban target user
+      description: |
+        Remove target user from blacklist. Implements idempotency like the above PUT, or specifies upon failure to find target.
+      responses:
+        "204":
+          description: User removed from blacklist
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+        "404":
+          $ref: "#/components/responses/InvalidUsername"
+      security:
+        - identifier: []
+
+  /users/{username}/photos/{photoID}/likes/{liker}:
+    parameters:
+    - name: username
+      in: path
+      required: true
+      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: photoID
+      in: path
+      required: true
+      description: Liked photo's ID
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 9999
+    - name: liker
+      in: path
+      required: true
+      description: Liking user's username
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    put:
+      tags: ["U2Photo"]
+      summary: Like given photo
+      description: |
+        Add current user to list of people who like the given photo. Implements idempotency.
+      operationId: likePhoto
+      responses:
+        "204":
+          description: Photo liked
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+    delete:
+      tags: ["U2Photo"]
+      summary: Unlike a photo
+      description: |
+        Removes user from list of people who like the photo. Also implements idempotency.
+      operationId: unlikePhoto
+      responses:
+        "204":
+          description: Photo unliked
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+  /users/{username}/photos/{photoID}/comments:
+    parameters:
+    - name: username
+      in: path
+      required: true
+      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: photoID
+      in: path
+      required: true
+      description: Target photo's ID
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 9999
+    - name: commenter-username
+      in: header
+      required: true
+      description: Since authorization needs to be checked, we send commenting user's username too.
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: upload-date
+      in: header
+      required: true
+      description: Generated client-side, it is the time of the upload.
+      schema:
+        type: string
+        format: date-time
+        minLength: 20
+        maxLength: 20
+    post:
+      tags: ["U2Photo"]
+      summary: Add a comment to a photo
+      description: |
+        Post a comment to the photo with given ID. This will automatically generate a commentID. Note that the request body (i.e. the comment) cannot be empty.
+      operationId: commentPhoto
+      requestBody:
+        description: |
+          Comment's text
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              pattern: '^[a-zA-Z0-9\s]*$'
+              minLength: 1
+              maxLength: 500
+              example: Nice picture Bob.
+      responses:
+        "204":
+          description: Comment successfully uploaded
+        "400":
+          description: Comment cannot be empty
+          content:
+            text/plain:
+              schema:
+                type: string
+                minLength: 3
+                maxLength: 50
+                pattern: '^[a-zA-Z0-9\s]*$'
+                example: Comment cannot be empty
+              
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+        "413":
+          $ref: "#/components/responses/RequestEntityTooLarge"
+      security:
+        - identifier: []
+        
+  /users/{username}/photos/{photoID}/comments/{commentID}:
+    parameters: 
+    - name: username
+      in: path
+      required: true
+      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    - name: photoID
+      in: path
+      required: true
+      description: Target photo's ID
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 9999
+    - name: commentID
+      in: path
+      required: true
+      description: Comment's ID
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 9999
+    - name: requesting-user
+      in: header
+      required: true
+      description: Since authorization needs to be checked, we send requesting user's username too.
+      schema:
+        $ref: "#/components/schemas/UsernameFormat"
+    delete:
+      tags: ["U2Photo"]
+      summary: Delete specified comment 
+      description: |
+        Delete specified comment. This operation implements idempotency, so deliting non-existing comments doesn't result in an error.
+      operationId: uncommentPhoto
+      responses:
+        "204":
+          description: Comment deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorised"
+      security:
+        - identifier: []
+        
+#############
+
 components:
   schemas:
 
@@ -139,513 +650,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
-###########################
-
-openapi: 3.0.3
-info:
-  title: WASAPhoto
-  description: |-
-    Keep in touch with your friends by sharing photos of special moments, thanks to WASAPhoto! You can upload your photos directly from your PC, and they will be visible to everyone following you!
-  version: 1.0.0
-paths:
-  /login:
-    post:
-      tags: ["Session"]
-      summary: Logs in the user
-      description: |      
-        If the user does not exist, it will be created, and an identifier (a JSON web token) is returned. If the user exists, the user identifier is returned.
-      operationId: doLogin
-      requestBody:
-        description: User details
-        content:
-          text/plain:
-            schema:
-              $ref: "#/components/schemas/UsernameFormat"
-        required: true
-      responses:
-        '201':
-          description: User log-in action successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  identifier:
-                    type: string
-                    format: JWT
-                    minLength: 20
-                    maxLength: 999
-        "400":
-          $ref: "#/components/responses/InvalidUsername"
-
-  /users/{username}/username:
-    parameters:
-    - name: username
-      in: path
-      description: Current user's username
-      required: True
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    put:
-      tags: ["U2Self"]
-      summary: Changes current user's username
-      description: |
-        Allows user to change their username. It cannot be the same as the current username.
-      operationId: setMyUserName
-      requestBody:
-        description: New username
-        content:
-          text/plain:
-            schema:
-              $ref: "#/components/schemas/UsernameFormat"
-      responses:
-        "204":
-          description: New username set
-        "400":
-          $ref: "#/components/responses/InvalidUsername"
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []
-        
-  /users/{username}/profile:
-    parameters:
-    - name: username
-      in: path
-      description: Target user's username
-      required: True
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: requesting-user
-      in: header
-      description: Searching user's username
-      required: True
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    get:
-      tags: ["U2U"]
-      summary: Get searched user's profile
-      description: |
-        Specify searched user in path parameter, and for authentication set requesting user's username in header field "requesting-user".
-      operationId: getUserProfile
-      responses:
-        "200":
-          description: Searched user's profile
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserProfile"
-        "400":
-          $ref: "#/components/responses/InvalidUsername"
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []
-        
-  /users/{username}/profile/photos:
-    parameters:
-    - name: username
-      in: path
-      description: Current user's username
-      required: True
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: n-images
-      in: header
-      description: Number of images user wants to upload
-      required: True
-      schema:
-        type: integer
-        minimum: 0
-        maximum: 9999
-    post:
-      tags: ["U2Self"]
-      summary: Post one or more new photo(s)
-      description: |
-        Post new photo(s) on profile. Note that the photoID is automatically generated server-side, so client doesn't need to worry about it.   
-      operationId: uploadPhoto
-      requestBody:
-        description: |
-          Uploaded photo(s) alongside metadata
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties: 
-                n-images:
-                  type: integer
-                  minimum: 1
-                  maximum: 10
-                  description: |
-                    Number of images user is uploading
-                Description:
-                  type: string
-                  pattern: ^[a-zA-Z0-9.,!?;:'"\s-]+$
-                  minLength: 0
-                  maxLength: 500
-                  description: |
-                    Optional description accompanying image(s)
-                UploadDate:
-                  type: string
-                  format: date-time
-                  minLength: 20
-                  maxLength: 20
-                  description: |
-                      Date at which upload is performed. Generated client-sid.
-                UploadedImagei:
-                  type: string
-                  format: binary
-                  pattern: "[01]*"
-                  minLength: 1
-                  maxLength: 99999999
-                  description: |
-                    The image files will be contained here, and there will be as many of these fields as there are images. "i" specifies the index of each image and must be replaced by corresponding integer (i.e. UploadedImage1, UploadedImage2...)
-      responses:
-        "201":
-          description: Image(s) succesfully uploaded
-          content: 
-            text/plain:
-              schema:
-                type: string
-                pattern: '^[a-zA-Z0-9 ]+$'
-                minLength: 3
-                maxLength: 30  
-                example: Image(s) successfully uploaded
-        "400":
-          description: Bad request
-          content:
-            text/plain:
-              schema:
-                type: string
-                pattern: '^[a-zA-Z0-9 ]+$'
-                minLength: 3
-                maxLength: 30  
-                example: Invalid header field values
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []
-        
-  /users/{username}/profile/photos/{photoID}:
-    parameters:
-    - name: username
-      in: path
-      required: true
-      description: Current user's username
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: photoID
-      in: path
-      description: ID of the photo to delete
-      required: true
-      schema:
-        type: integer
-        minimum: 0
-        maximum: 9999
-    delete:
-      tags: ["U2Self"]
-      operationId: deletePhoto
-      summary: Delete given photo
-      description: |
-        Delete photo with specified ID. If no such photo exists or it has already been deleted, the operation is still considered successful
-      responses:
-        "204":
-          description: Photo deleted
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []
-        
-  /users/{username}/profile/following/{user2}:
-    parameters:
-    - name: username
-      in: path
-      required: true
-      description: Current user's username
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: user2
-      in: path
-      required: true
-      description: Searched user's username
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    put:
-      tags: ["U2U"]
-      summary: Follow given user
-      description: |
-        Add searched user to followed
-      operationId: followUser
-      responses:
-        "204":
-          description: User followed
-        "400":
-          $ref: "#/components/responses/InvalidUsername"
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      security:
-        - identifier: []
-    delete:
-      tags: ["U2U"]
-      summary: Unfollow given user
-      description: |
-        Remove searched user from follow list. If user has already been unfollowed the operation is considerd successful. If username isn't found it is specified in the response.
-      operationId: unfollowUser
-      responses:
-        "204":
-          description: User unfollowed
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-        "404":
-          $ref: "#/components/responses/InvalidUsername"
-      security:
-        - identifier: []
-        
-  /users/{username}/stream:
-    parameters:
-    - name: username
-      in: path
-      required: true
-      description: Current user's username
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    get:
-      tags: ["U2Self"]
-      operationId: getMyStream
-      summary: Get one's stream
-      description: |
-        Get current user's stream
-      responses:
-        "200":
-          description: User's stream retrieved
-          content: 
-            application/json:
-              schema:
-                type: array
-                minItems: 0
-                maxItems: 9999
-                items:
-                  $ref: "#/components/schemas/Photo"
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []
-        
-  /users/{username}/blacklist/{user2}:
-    parameters:
-    - name: username
-      in: path
-      required: true
-      description: Current user's username
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: user2
-      in: path
-      required: true
-      description: Target user's username
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    put:
-      tags: ["U2U"]
-      operationId: banUser
-      summary: Ban target user
-      description: |
-        Add target user to blacklist. If target user has already been blacklisted, the operation is considered successful. If user doesn't exist (username not found) it is specified in response.  
-      responses:
-        "204":
-          description: User blacklisted
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-        "404":
-          $ref: "#/components/responses/InvalidUsername"
-      security:
-        - identifier: []
-    delete:
-      tags: ["U2U"]
-      operationId: unbanUser
-      summary: Unban target user
-      description: |
-        Remove target user from blacklist. Implements idempotency like the above PUT, or specifies upon failure to find target.
-      responses:
-        "204":
-          description: User removed from blacklist
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-        "404":
-          $ref: "#/components/responses/InvalidUsername"
-      security:
-        - identifier: []
-      
-  /photos/{photoID}/likes/{username}:
-    parameters:
-    - name: uploader
-      in: header
-      required: true
-      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: photoID
-      in: path
-      required: true
-      description: Liked photo's ID
-      schema:
-        type: integer
-        minimum: 0
-        maximum: 9999
-    - name: username
-      in: path
-      required: true
-      description: Current user's username
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    put:
-      tags: ["U2Photo"]
-      summary: Like given photo
-      description: |
-        Add current user to list of people who like the given photo. Implements idempotency.
-      operationId: likePhoto
-      responses:
-        "204":
-          description: Photo liked
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []
-    delete:
-      tags: ["U2Photo"]
-      summary: Unlike a photo
-      description: |
-        Removes user from list of people who like the photo. Also implements idempotency.
-      operationId: unlikePhoto
-      responses:
-        "204":
-          description: Photo unliked
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []
-        
-  /photos/{photoID}/comments:
-    parameters:
-    - name: uploader
-      in: header
-      required: true
-      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: photoID
-      in: path
-      required: true
-      description: Target photo's ID
-      schema:
-        type: integer
-        minimum: 0
-        maximum: 9999
-    - name: commenter-username
-      in: header
-      required: true
-      description: Since authorization needs to be checked, we send commenting user's username too.
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: upload-date
-      in: header
-      required: true
-      description: Generated client-side, it is the time of the upload.
-      schema:
-        type: string
-        format: date-time
-        minLength: 20
-        maxLength: 20
-    post:
-      tags: ["U2Photo"]
-      summary: Add a comment to a photo
-      description: |
-        Post a comment to the photo with given ID. This will automatically generate a commentID. Note that the request body (i.e. the comment) cannot be empty.
-      operationId: commentPhoto
-      requestBody:
-        description: |
-          Comment's text
-        required: true
-        content:
-          text/plain:
-            schema:
-              type: string
-              pattern: '^[a-zA-Z0-9\s]*$'
-              minLength: 1
-              maxLength: 500
-              example: Nice picture Bob.
-      responses:
-        "201":
-          description: Comment successfully uploaded
-          content:
-            text/plain:
-              schema:
-                type: string
-                minLength: 3
-                maxLength: 50
-                pattern: '^[a-zA-Z0-9\s]*$'
-                example: Comment successfully uploaded 
-        "400":
-          description: Comment cannot be empty
-          content:
-            text/plain:
-              schema:
-                type: string
-                minLength: 3
-                maxLength: 50
-                pattern: '^[a-zA-Z0-9\s]*$'
-                example: Comment cannot be empty
-              
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-        "413":
-          $ref: "#/components/responses/RequestEntityTooLarge"
-      security:
-        - identifier: []
-        
-  /photos/{photoID}/comments/{commentID}:
-    parameters: 
-    - name: uploader
-      in: header
-      required: true
-      description: Photo uploader's username <- photoID not unique on its own, but unique for each user
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    - name: photoID
-      in: path
-      required: true
-      description: Target photo's ID
-      schema:
-        type: integer
-        minimum: 0
-        maximum: 9999
-    - name: commentID
-      in: path
-      required: true
-      description: Comment's ID
-      schema:
-        type: integer
-        minimum: 0
-        maximum: 9999
-    - name: requesting-user
-      in: header
-      required: true
-      description: Since authorization needs to be checked, we send requesting user's username too.
-      schema:
-        $ref: "#/components/schemas/UsernameFormat"
-    delete:
-      tags: ["U2Photo"]
-      summary: Delete specified comment 
-      description: |
-        Delete specified comment. This operation implements idempotency, so deliting non-existing comments doesn't result in an error.
-      operationId: uncommentPhoto
-      responses:
-        "204":
-          description: Comment deleted.
-        "401":
-          $ref: "#/components/responses/Unauthorised"
-      security:
-        - identifier: []

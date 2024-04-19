@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fmt"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -13,11 +13,11 @@ import (
 
 func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// Logs in a user given a username. If username isn't in DB, we create a new user
-	w.Header().Set("Content-type", "text/plain")
+	w.Header().Set("Content-Type", "text/plain")
 
 	// read request header to check that content-type is text/plain
-	if r.Header.Get("Content-type") != "text/plain" {
-		http.Error(w, "Content-type invalid, want 'text/plain'", http.StatusBadRequest)
+	if r.Header.Get("Content-Type") != "text/plain" {
+		http.Error(w, "Content-Type invalid, want 'text/plain'", http.StatusBadRequest)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
@@ -27,7 +27,6 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 		return
 	}
 	username := string(body)
-	fmt.Fprintf(w, "Your username is: %s \n", username)
 
 	// check that username is valid
 	if !usernameIsValid(username) {
@@ -73,7 +72,17 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 		log.Println("Error signing JWT token: ", err)
 		return
 	}
-	// return token in response
-	fmt.Fprintf(w, "Bearer authentication token: %s", signedToken)
-
+	// marshall and output the token
+	out, err := json.Marshal(signedToken)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		log.Println("Error marshalling token: ", err)
+		return
+	}
+	_, err = w.Write(out)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		log.Println("Error sending token: ", err)
+		return
+	}
 }

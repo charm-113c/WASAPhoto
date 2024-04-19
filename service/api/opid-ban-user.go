@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -39,8 +38,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	err = validateToken(r, user1Data.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -80,8 +78,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 		return
 	}
 	if banned {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "User is already blacklisted")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -94,5 +91,4 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	fmt.Fprintf(w, "%s blacklisted", user2)
 }

@@ -17,11 +17,10 @@ func (db *appdbimpl) GetPhotoData(userID string, photoID int) (Photo, error) {
 	// put it in a variable
 	err := row.Scan(&out.PhotoID, &out.Uploader, &out.BinaryData, &out.Description, &out.Likes, &out.UploadDate, &out.FileExtension, &out.Comments)
 	if err != nil {
-		var empty Photo
 		if errors.Is(err, sql.ErrNoRows) {
-			return empty, nil
+			return Photo{}, nil
 		}
-		return empty, err
+		return Photo{}, err
 	}
 	return out, nil
 }
