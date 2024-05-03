@@ -1,19 +1,38 @@
 <template>
-    For likes: the server returns a list of people who like the photo. `liked` will then be true if the user is in the list<br>
-    <img :src="imgSRC" :alt="description"> <br>
-    <span>{{ uploader }} - {{ uploadDate }} - Likes: {{ likes }} - Comments: {{ nComments }}</span> <br>
-    <button v-if="!liked" @click="likePhoto">Like</button>
-    <button v-else @click="unlikePhoto">Unlike</button>
-    <p>{{ description }}</p> <br>
-    <input type="text" v-model="newComment" @keydown="postComment"/>
-    
-    <div v-for="comment in comments" :id="comment.name +'/'+ comment.id">
-        <span>{{ comment.date }} - by {{ comment.name }}</span> 
-        <button v-if="comment.isMyComm" @click="deleteComment">Delete</button>
-        <p>{{ comment.text }}</p>
-    </div>
+    <div class="container">
+        <div class="image-grid">
+            <span class="img-header">{{ uploader }} | {{ uploadDate }}</span>
+            <img class="img" :src="imgSRC" :alt="description"> 
+            <svg class="toggle-button img-like-button" :class="{'like-button': !liked, 'unlike-button': liked}" @click="likePhoto($event,liked)">
+                    <use href="/feather-sprite-v4.29.0.svg#thumbs-up"/>
+            </svg>
+            <span class="img-likes">{{ likes }}</span>
+            <svg class="comment-button img-comment-button" :class="{'unlike-button':nComments>0, 'like-button':nComments===0}">
+                    <use href="/feather-sprite-v4.29.0.svg#message-circle"/>
+            </svg>
+            <span class="img-comments">{{ nComments }}</span> 
+            <p class="img-description">{{ description }}</p> 
+        </div>
 
-    <ErrorMsg v-if="errorMsg" :msg="errorMsg" :code="errorCode"></ErrorMsg>
+        <hr>
+        
+        <div class="comment-section">
+            <input type="text" v-model="newComment" @keydown="postComment" placeholder="Write a comment"/>
+        
+            <div class="comment-container" v-for="comment in comments" :id="comment.name +'/'+ comment.id">
+                <span class="commenter">{{ comment.name }} on {{ comment.date }}</span>
+                <svg class="del-button" v-if="comment.isMyComm" :id="comment.name +'|'+ comment.id" @click="showDialog">
+                    <use href="/feather-sprite-v4.29.0.svg#trash-2"/>
+                </svg>
+                <p class="comment-text">{{ comment.text }}</p>
+            </div>    
+        </div>
+    </div>
+    <div v-if="showModal">
+        <!-- the modal emits delete or cancel event upon click -->
+        <PopUpMsg :MsgText="modalTxt" @close="closeModal" @ok="deleteComment"/>
+    </div>
+    <ErrorMsg v-if="showErrMsg" :msg="errorMsg" @close="closeErrMsg"></ErrorMsg>
 </template>
 
 <script>
@@ -22,7 +41,7 @@ export default {
     data() {
         return {
             username: sessionStorage.getItem('username'),
-            errorCode: null,
+            showErrMsg: false,
             errorMsg: '',
             imgSRC: null,
             likes: 0,
@@ -32,7 +51,10 @@ export default {
             comments: {},
             nComments: 0,
             // allow user to post a comment
-            newComment: 'Got a comment to make?',
+            newComment: "",
+            showModal: false,
+            modalTxt: "Are you sure you want to delete your comment?",
+            targetCommentID: null, // remember comment targeted by user for deletion 
         }
     },
     methods: {
@@ -43,7 +65,7 @@ export default {
                                                                 'requesting-user': this.username},}) 
                 this.imgSRC = `data:${res.data.FileExtension};base64,${res.data.BinaryData}`
                 this.likes = res.data.Likes 
-                this.uploadDate = new Date(res.data.UploadDate) 
+                this.uploadDate = new Date(res.data.UploadDate).toUTCString()
                 this.description = res.data.Description
                 if (res.data.Likers) {
                     this.liked = res.data.Likers.includes(this.username)
@@ -54,10 +76,10 @@ export default {
                     res.data.Comments.forEach(comment => {
                         let byCurrUser = comment.CommenterName === this.username
                         this.comments[comment.CommenterName + comment.CommentID] = {
-                            'text': comment.CommentText, 'date': new Date(comment.CommentDate), 
+                            'text': comment.CommentText, 'date': new Date(comment.CommentDate).toUTCString(), 
                             'name': comment.CommenterName, 'id': comment.CommentID, 'isMyComm': byCurrUser
                         }
-                    });
+                    })
                 }
             } catch (error) {
                 this.handleError(error)
@@ -78,10 +100,9 @@ export default {
                 }
             }
         },
-        async deleteComment(e) {
-            const authorAndID = e.target.parentElement.id.split('/')
+        async deleteComment() {
+            const authorAndID = this.targetCommentID
             // note: author must === current user for the delete button to be visible in the first place
-            console.log(authorAndID);
             try {
                 await this.$axios.delete(`/users/${this.uploader}/photos/${this.photoID}/comments/${authorAndID[1]}`,
                                     {headers: {'Authorization': sessionStorage.getItem('bearerToken'),
@@ -91,40 +112,46 @@ export default {
                 this.handleError(error)
             }
         },
-        async likePhoto() {
+        async likePhoto(event, liked) {
+            // this handles both liking and unliking a photo
             try {
-                await this.$axios.put(`/users/${this.uploader}/photos/${this.photoID}/likes/${this.username}`,
-                                        null,
-                                        {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
+                if (!liked) {
+                await this.$axios.put(`/users/${this.uploader}/photos/${this.photoID}/likes/${this.username}`, 
+                                    null, // empty body
+                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
                 this.liked = true
                 this.likes++
+                } else {
+                    await this.$axios.delete(`/users/${this.uploader}/photos/${this.photoID}/likes/${this.username}`,
+                                        {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
+                    this.liked = false
+                    this.likes--
+                }
             } catch (error) {
                 this.handleError(error)
             }
         },
-        async unlikePhoto() {
-            try {
-                await this.$axios.delete(`/users/${this.uploader}/photos/${this.photoID}/likes/${this.username}`,
-                                        {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.liked = false
-                this.likes--
-            } catch (error) {
-                this.handleError(error)
-            }
+        showDialog(e) {
+            this.showModal = true
+            this.targetCommentID = e.target.parentElement.id.split(/[|/]/)
+        },
+        closeModal() {
+            this.showModal = false
         },
         handleError(error) {
-            if (error.response) {
+            if (error.response) { 
                     // check if the error is from the response
-                    this.errorCode = error.response.status
                     this.errorMsg = error.response.data
                 } else if (error.request) {
                     // or from the request itself
-                    this.errorCode = 400
                     this.errorMsg = error.request
                 } else {
-                    this.errorCode = 500
                     this.errorMsg = error.message
                 }
+            this.showErrMsg = true
+        },
+        closeErrMsg() {
+            this.showErrMsg = false
         },
         refresh() {
             location.reload()
@@ -135,3 +162,21 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.container {
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: brightness(40%);
+}
+
+.comment-button:hover {
+    cursor: default;
+}
+
+hr {
+    width: 90%;
+    background-color: var(--strong-colour);
+    margin-left: 50px;
+}
+</style>

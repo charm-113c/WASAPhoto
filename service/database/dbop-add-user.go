@@ -2,6 +2,6 @@ package database
 
 // Used only when a new user logs in: insert them in the DB
 func (db *appdbimpl) AddUser(name, uID string) error {
-	_, err := db.c.Exec("INSERT INTO Users (username, userID, nphotos, totnphotos) VALUES (?, ?, 0, 0)", name, uID)
+	_, err := db.c.Exec("INSERT INTO Users (username, userID, nphotos, totnphotos, totncomments) VALUES (?, ?, 0, 0, 0)", name, uID)
 	return err
 }

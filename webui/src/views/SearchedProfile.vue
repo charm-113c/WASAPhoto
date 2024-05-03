@@ -1,36 +1,51 @@
 <template>
 
-    <!-- Here we display the profile of the searched user. Thankfully, backend provides us with the data, we just fill in.
-    This page is only accessed upopn being routed to it. That's a plus.   -->
-    <!-- First we show general user data  -->
-    <div v-if="!errorMsg">
-        <div class="section">
-            <p>{{ user2 }} - Number of photos: {{ nphotos }} - Followers: {{ nFollowers }} - Following: {{ nFollowing }}</p>
-            <button v-if="!userFollowed" @click="followUser">Follow</button>
-            <button v-else @click="unfollowUser">Unfollow</button>
-            <button v-if="!userBanned" @click="banUser">Ban</button>
-            <button v-else @click="unbanUser">Unban</button>
+    <Sidebar></Sidebar>
+    <div class="container">
+        <div class="searched-profile">
+            <div class="metadata">
+                <span class="the-man"><h5>The one and only, the myth, the legend:</h5>  <h3>{{ user2 }}</h3></span>
+                <div class="f-buttons">
+                    <svg @click="toggleFollow" :class="{'followed':userFollowed}">
+                        <use href="/feather-sprite-v4.29.0.svg#user-plus"/>
+                    </svg>
+                    <!-- <button v-if="!userFollowed" @click="followUser">Follow</button>
+                    <button v-else @click="unfollowUser">Unfollow</button> -->
+                    <svg @click="toggleBan" :class="{'banned': userBanned}">
+                        <use href="/feather-sprite-v4.29.0.svg#user-x"/>
+                    </svg>
+                    <!-- <button v-if="!userBanned" @click="banUser">Ban</button>
+                    <button v-else @click="unbanUser">Unban</button> -->
+                </div>
+                <div class="f-text">
+                    <span v-if="!userFollowed">Not Followed</span>
+                    <span v-else>Followed</span>
 
-            <p>Urgh... Style Followers and Following so that they display the corresponding list when clicked</p>  
-        </div> 
-        <!-- Then the photos, if they exist -->
-        <div v-for="photo in userPhotos" v-if="!noPhotos" :id="photo.ID">
-            <img :src="photo.src" :alt="photo.description" @click="showImage"/> <br>
-            <span>{{ photo.uploadDate }} - Likes: {{ photo.likes }} - Comments: {{ photo.comments }}</span>
-            <button v-if="!photo.liked" @click="likePhoto">Like</button>
-            <button v-else @click="unlikePhoto">Unlike</button>
-            <p>{{ photo.description }}</p>
+                    <span v-if="!userBanned">Ban User</span>
+                    <span v-else>Unban User</span>
+                </div>
+                
+                <span>
+                    <details><summary>Followers: {{ nFollowers }}</summary> {{ followers }}</details>
+                    <details><summary>Following: {{ nFollowing }}</summary> {{ following }}</details>
+                </span>
+                <span class="stats">Number of photos: {{ nphotos }}</span>
+            </div>
             <hr>
-        </div>
 
-        <p v-if="noPhotos">{{ user2 }} hasn't uploaded any photo yet</p>
+            <PhotoContainer :photos="userPhotos"></PhotoContainer>
+
+            <p v-if="noPhotos">{{ user2 }} hasn't uploaded any photo yet</p>
+        </div>
     </div>
 
-    <ErrorMsg v-if="errorMsg" :msg="errorMsg" :code="errorCode"></ErrorMsg>
+    <ErrorMsg v-if="showErrMsg" :msg="errorMsg" @close="closeErrMsg"></ErrorMsg>
     
 </template>
 
 <script>
+import PhotoContainer from '../components/PhotoContainer.vue'
+
 export default {
     props: ['user2'],
     data() {
@@ -43,7 +58,7 @@ export default {
             nFollowers: 0,
             following: [],
             nFollowing: 0,
-            errorCode: null,
+            showErrMsg: false,
             errorMsg: '',
             noPhotos: false,
             userFollowed: false,
@@ -57,10 +72,21 @@ export default {
                     { headers: {'Authorization': sessionStorage.getItem('bearerToken'), 'requesting-user': this.username} }) 
                 // parse response
                 this.nphotos = res.data.Nphotos
-                this.followers = res.data.Followers
-                this.nFollowers = this.followers !== null? this.followers.length : 0
-                this.following = res.data.Following
-                this.nFollowing = this.following !== null? this.following.length : 0
+                if (res.data.Followers !== null) {
+                    this.followers = res.data.Followers.join(', ')
+                    this.nFollowers = res.data.Followers.length
+                    this.userFollowed = res.data.Followers.includes(this.username)
+                } else {
+                    this.followers = ''
+                    this.nFollowers = 0
+                }
+                if (res.data.Following !== null) {
+                    this.following = res.data.Following.join(', ')
+                    this.nFollowing = res.data.Following.length
+                } else {
+                    this.following = ''
+                    this.nFollowing = 0
+                }
                 // photos are a particular case
                 if (res.data.Photos === null) {
                     this.noPhotos = true
@@ -69,8 +95,8 @@ export default {
                         // transform img data into data URI so as to feed it to img tag
                         let imgSRC = `data:${photo.FileExtension};base64,${photo.BinaryData}`
                         this.userPhotos[photo.Uploader + photo.PhotoID] = {
-                            'src': imgSRC, 'description': photo.Description, 'uploadDate': new Date(photo.UploadDate), 
-                            'likes': photo.Likes, 'comments': photo.Comments, 'ID': photo.PhotoID, 'liked': false
+                            'src': imgSRC, 'uploader': photo.Uploader, 'description': photo.Description, 'uploadDate': new Date(photo.UploadDate).toUTCString(), 
+                            'likes': photo.Likes, 'comments': photo.Comments, 'id': photo.PhotoID, 'liked': false
                         }
                         if (photo.Likers) {
                             this.userPhotos[photo.Uploader + photo.PhotoID].liked = photo.Likers.includes(this.username)
@@ -81,62 +107,48 @@ export default {
                 this.handleError(error)
             }
         },
-        async followUser() {
+        async toggleFollow() {
             try {
-                await this.$axios.put(`/users/${this.username}/following/${this.user2}`, null,
+                // if not followed, follow
+                if (!this.userFollowed) {
+                    await this.$axios.put(`/users/${this.username}/following/${this.user2}`, null,
                                 {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.userFollowed = true
+                    this.userFollowed = true
+                    // artificially increase nfollowers and follows
+                    this.nFollowers++
+                    this.followers = this.followers === ''? this.username : this.followers + ', ' + this.username
+                }  else { // do the opposite
+                    await this.$axios.delete(`/users/${this.username}/following/${this.user2}`,
+                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
+                    this.userFollowed = false
+                    this.nFollowers--
+                    // First take away the commas if they exist
+                    this.followers = this.followers.replace(', ', '')
+                    // then the username itself
+                    this.followers = this.followers.replace(this.username, '')
+                }
             } catch (error) {
                 this.handleError(error)
             }
         },
-        async unfollowUser() {
+        async toggleBan() {
             try {
-                await this.$axios.delete(`/users/${this.username}/following/${this.user2}`,
-                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.userFollowed = false
-            } catch (error) {
-                this.handleError
-            }
-        },
-        async banUser() {
-            try {
-                await this.$axios.put(`/users/${this.username}/blacklist/${this.user2}`, null,
+                if (!this.userBanned) {
+                    await this.$axios.put(`/users/${this.username}/blacklist/${this.user2}`, null,
                                 {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.userBanned = true
+                    this.userBanned = true
+                } else {
+                    await this.$axios.delete(`/users/${this.username}/blacklist/${this.user2}`,
+                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
+                    this.userBanned = false
+                }
             } catch (error) {
                 this.handleError(error)
             }
         },
         async unbanUser() {
             try {
-                await this.$axios.delete(`/users/${this.username}/blacklist/${this.user2}`,
-                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.userBanned = false
-            } catch (error) {
-                this.handleError(error)
-            }
-        },
-        async likePhoto(e) {
-            try {
-                // elemID is uploaderName+'/'+photoID, we want them separated
-                const pID = e.target.parentElement.id
-                await this.$axios.put(`/users/${this.user2}/photos/${pID}/likes/${this.username}`, 
-                                    null, // empty body
-                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.userPhotos[this.user2 + pID].liked = true
-                this.userPhotos[this.user2 + pID].likes++
-            } catch (error) {
-                this.handleError(error)
-            }
-        },
-        async unlikePhoto(e) {
-            try {
-                const pID = e.target.parentElement.id
-                await this.$axios.delete(`/users/${this.user2}/photos/${pID}/likes/${this.username}`,
-                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.userPhotos[this.user2 + pID].liked = false
-                this.userPhotos[this.user2 + pID].likes--
+                
             } catch (error) {
                 this.handleError(error)
             }
@@ -147,17 +159,18 @@ export default {
         handleError(error) {
             if (error.response) { 
                     // check if the error is from the response
-                    this.errorCode = error.response.status
                     this.errorMsg = error.response.data
                 } else if (error.request) {
                     // or from the request itself
-                    this.errorCode = 400
                     this.errorMsg = error.request
                 } else {
-                    this.errorCode = 500
                     this.errorMsg = error.message
                 }
-        }
+            this.showErrMsg = true
+        },
+        closeErrMsg() {
+            this.showErrMsg = false
+        },
     },
     beforeMount() {
         this.getUserProfile()
@@ -166,7 +179,11 @@ export default {
 </script>
 
 <style scoped>
-p {
-    color: black
+svg {
+    width: 35px;
+    height: 40px;
+}
+svg:hover {
+    cursor: pointer;
 }
 </style>

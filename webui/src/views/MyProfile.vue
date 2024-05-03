@@ -1,36 +1,66 @@
 <template>
-    <ErrorMsg v-if="errorMsg" :msg="errorMsg" :code="errorCode"></ErrorMsg>
-    Welcome to your profile, {{ username }}. Here, you can do stuff. Stuff includes:
-    <ul>
-        <li><details><summary>Followers: {{ nFollowers }}</summary> <p>{{ followers }}</p></details></li>
-        <li><details><summary>Following: {{ nFollowing }}</summary> <p>{{ following }}</p></details></li>
-        <li>Uploading new photos</li>
-        <li>If we're feeling frisky, deleting photos and comments</li>
-        <li>
-            <input type="text" v-model="newUsername">
-            <button @click="changeUsername">Change your username</button>
-        </li>
-    </ul>
-    Priority goes to uploading your own photos, so here you go: 
-    <form>
-        <label for="images">Click to select images</label> <br>
-        <input type="file" id="images" accept="image/png, image/jpeg" @change="selectImage" required/>
-        <br>
-        <label for="description">Description [optional]</label> <br>
-        <input type="text" id="description" v-model="description">
-        <div class="submit">
-            <button @click="uploadPhotos">Upload</button>
+
+    <Sidebar></Sidebar>
+
+    <div class="container">
+        <div class="profile">
+
+            <h4 class="top-box">
+                Welcome to your profile, {{ username }}. Here, you can do stuff. <br> Stuff includes:
+            </h4>
+            <ul>
+                <li>See your follows:</li>
+                <li><details><summary>Followers: {{ nFollowers }}</summary>{{ followers }}</details></li>
+                <li><details><summary>Following: {{ nFollowing }}</summary> {{ following }}</details></li>
+                <li>
+                    Change your username: <br>
+                    <input class="new-name" type="text" v-model="newUsername" placeholder="New username" @keydown="changeUsername">
+                </li>
+            </ul>
+            <p></p>
+            You currently have {{ Object.keys(myPhotos).length }} photo(s).
+            Feel free to upload some, or delete uploaded ones: 
+            <form>
+                <label for="images">Select a photo to upload</label> <br>
+                <input type="file" id="images" accept="image/png, image/jpeg" @change="selectImage" required/>
+                <br>
+                <label for="description">Description (optional):</label> <br>
+                <input class="desc" type="text" id="description" placeholder="Enter description" v-model="description">
+                <div class="submit">
+                    <button @click.prevent="uploadPhotos">Upload</button>
+                </div>
+            </form>
+            <hr>
+            <div class="profile-photos" v-for="photo in this.myPhotos" :id="photo.id">
+                <img :src="photo.src" :alt="photo.description" @click="showImage">
+                <!-- <button class="del-btn" @click="deletePhoto">Delete Photo</button> <br> -->
+                <svg class="del-btn" :id="photo.id + '.'" @click="showDialog">
+                    <use href="/feather-sprite-v4.29.0.svg#trash-2"/>
+                </svg>
+                <span class="metadata">{{ photo.uploadDate }}</span>
+                <svg class="like" :class="{'not-liked': !photo.liked, 'liked': photo.liked}" :id="photo.id + '_'" @click="likePhoto($event, photo.liked)">
+                    <use href="/feather-sprite-v4.29.0.svg#thumbs-up"/>
+                </svg>
+                <span class="nlikes">{{ photo.likes }}</span>
+                <!-- <button class="photo-btn" v-if="!photo.liked" @click="likePhoto">Like</button>
+                <button class="photo-btn" v-else @click="unlikePhoto">Unlike</button> -->
+                <svg class="comment" :class="{'commented': photo.comments > 0}" :id="photo.id + '-'" @click="showImage">
+                    <use href="/feather-sprite-v4.29.0.svg#message-circle"/>
+                </svg>
+                <span class="ncomments">{{ photo.comments }}</span>
+                <p class="photo-desc">{{ photo.description }}</p>
+                <hr class="line">
+            </div>
+
         </div>
-    </form>
-    <div v-for="photo in this.myPhotos" :id="photo.ID">
-        <img :src="photo.src" :alt="photo.description" @click="showImage">
-        <button @click="deletePhoto">Delete Photo</button> <br>
-        <span>{{ photo.uploadDate }} - Likes: {{ photo.likes }} - Comments: {{ photo.comments }}</span>
-        <button v-if="!photo.liked" @click="likePhoto">Like</button>
-        <button v-else @click="unlikePhoto">Unlike</button>
-        <p>{{ photo.description }}</p>
     </div>
 
+    <div v-if="showModal">
+        <!-- the modal emits delete or cancel event upon click -->
+        <PopUpMsg :MsgText="modalTxt" @close="closeModal" @ok="deletePhoto"/>
+    </div>
+
+    <ErrorMsg v-if="showErrMsg" :msg="errorMsg" @close="closeErrMsg"></ErrorMsg>
 </template>
 
 <script>
@@ -42,17 +72,20 @@ export default {
             myPhotos: {}, 
             noPhotos: true,
             nphotos: 0,
-            followers: [], // list of names
+            followers: '', // list of names
             nFollowers: 0,
-            following: [],
+            following: '',
             nFollowing: 0,
             // and we'll allow them to post photos
             selectedFile: null,
             description: '',
-            errorCode: null,
+            showErrMsg: false,
             errorMsg: '',
             // or change username
             newUsername: '',
+            showModal: false,
+            modalTxt: 'Are you sure you want to delete your photo?',
+            targetPhotoID: '',
         }
     },
     methods: {
@@ -84,10 +117,20 @@ export default {
                 const res = await this.$axios.get(`/users/${this.username}/profile`,
                     {headers: {'Authorization': sessionStorage.getItem('bearerToken'), 'requesting-user': this.username}})
                 this.nphotos = res.data.Nphotos
-                this.followers = res.data.Followers 
-                this.nFollowers = this.followers !== null ? this.followers.length : 0
-                this.following = res.data.Following 
-                this.nFollowing = this.following !== null ? this.following.length : 0
+                if (res.data.Followers !== null) {
+                    this.followers = res.data.Followers.join(', ')
+                    this.nFollowers = res.data.Followers.length
+                } else {
+                    this.followers = ''
+                    this.nFollowers = 0
+                }
+                if (res.data.Following !== null) {
+                    this.following = res.data.Following.join(', ')
+                    this.nFollowing = res.data.Following.length
+                } else {
+                    this.following = ''
+                    this.nFollowing = 0
+                }
                 // as usual, photos need special treatment
                 if (res.data.Photos === null) {
                         this.noPhotos = true
@@ -96,8 +139,8 @@ export default {
                         // transform img data into data URI so as to feed it to img tag
                         let imgSRC = `data:${photo.FileExtension};base64,${photo.BinaryData}`
                         this.myPhotos[photo.Uploader + photo.PhotoID] = {
-                            'src': imgSRC, 'description': photo.Description, 'uploadDate': new Date(photo.UploadDate), 
-                            'likes': photo.Likes, 'comments': photo.Comments, 'ID': photo.PhotoID, 'liked': false
+                            'src': imgSRC, 'uploader': this.username, 'description': photo.Description, 'uploadDate': new Date(photo.UploadDate).toUTCString(), 
+                            'likes': photo.Likes, 'comments': photo.Comments, 'id': photo.PhotoID, 'liked': false
                         }
                         // set 'liked' to true if userrname is liking current photo
                         if (photo.Likers) {
@@ -109,9 +152,29 @@ export default {
                 this.handleError(error)
             }
         },
-        async changeUsername() {
+        async likePhoto(e, liked) {
             try {
-                if (this.newUsername) {
+                // get photoID
+                let pID = e.target.parentElement.id.replace('_', '')
+                if (!liked) {
+                    await this.$axios.put(`/users/${this.username}/photos/${pID}/likes/${this.username}`,
+                                            null,
+                                            {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
+                    this.myPhotos[this.username + pID].liked = true
+                    this.myPhotos[this.username + pID].likes++
+                } else {
+                    await this.$axios.delete(`/users/${this.username}/photos/${pID}/likes/${this.username}`,
+                                            {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
+                    this.myPhotos[this.username + pID].liked = false
+                    this.myPhotos[this.username + pID].likes--
+                }
+            } catch (error) {
+                this.handleError(error)
+            }
+        },
+        async changeUsername(e) {
+            try {
+                if (this.newUsername && e.key === 'Enter') {
                     // trim white spaces
                     this.newUsername = this.newUsername.trim()
                     // make request to change
@@ -120,14 +183,22 @@ export default {
                         {headers: {'Authorization': sessionStorage.getItem('bearerToken'), 'Content-Type': 'text/plain'}})
                     this.username = this.newUsername
                     sessionStorage.setItem('username', this.newUsername)
+                    this.refresh()
                 }
             } catch (error) {
                 this.handleError(error)
             }
         },
-        async deletePhoto(e) {
+        showDialog(e) {
+            this.showModal = true
+            this.targetPhotoID = e.target.parentElement.id.replace('.', '')
+        },
+        closeModal() {
+            this.showModal = false
+        },
+        async deletePhoto() {
             try {
-                await this.$axios.delete(`/users/${this.username}/photos/${e.target.parentElement.id}`,
+                await this.$axios.delete(`/users/${this.username}/photos/${this.targetPhotoID}`,
                                         {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
                 this.refresh()
             } catch (error) {
@@ -135,46 +206,23 @@ export default {
             }
         },
         showImage(e) {
-            this.$router.push({name: 'viewImage', params: {uploader: this.username, photoID: e.target.parentElement.id}})
-        },
-        async likePhoto(e) {
-            // turns out that if I don't await a request I might fail to catch incoming errors
-            try {
-                // elemID is uploaderName+'/'+photoID, we want them separated
-                const pID = e.target.parentElement.id
-                await this.$axios.put(`/users/${this.username}/photos/${pID}/likes/${this.username}`, 
-                                    null, // empty body
-                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.myPhotos[this.username + pID].liked = true
-                this.myPhotos[this.username + pID].likes++
-            } catch (error) {
-                this.handleError(error)
-            }
-        },
-        async unlikePhoto(e) {
-            try {
-                const pID = e.target.parentElement.id
-                await this.$axios.delete(`/users/${this.username}/photos/${pID}/likes/${this.username}`,
-                                    {headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
-                this.myPhotos[this.username + pID].liked = false
-                this.myPhotos[this.username + pID].likes--
-            } catch (error) {
-                this.handleError(error)
-            }
+            let pID = e.target.parentElement.id.replace('-', '')
+            this.$router.push({name: 'viewImage', params: {uploader: this.username, photoID: pID}})
         },
         handleError(error) {
             if (error.response) { 
                     // check if the error is from the response
-                    this.errorCode = error.response.status
                     this.errorMsg = error.response.data
                 } else if (error.request) {
                     // or from the request itself
-                    this.errorCode = 400
                     this.errorMsg = error.request
                 } else {
-                    this.errorCode = 500
                     this.errorMsg = error.message
                 }
+            this.showErrMsg = true
+        },
+        closeErrMsg() {
+            this.showErrMsg = false
         },
         refresh() {
             // refresh really means update showed photos
@@ -187,3 +235,154 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+
+.container {
+    margin-right: 0px;
+}
+
+.profile {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    margin-left: 40px;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding-right: 20px;
+    padding-left: 20px;
+}
+
+.top-box {
+    align-self: center;
+    width: 70%;
+    background-color: var(--strong-colour);
+    text-align: center;
+    padding: 10px 20px 10px 20px;
+    border-radius: 50px;
+    margin-top: 10px;
+}
+
+ul {
+    list-style-type: none;
+}
+
+input {
+    height: 30px;
+}
+
+input::file-selector-button {
+    background-color: transparent;
+    color: var(--bold-colour);
+    border-color: var(--bold-colour);
+    width: 100px;
+    border-radius: 15px;
+}
+input::file-selector-button:hover {
+    cursor: pointer;
+} 
+
+.new-name {
+    background-color: var(--light-colour);
+    color: var(--strong-colour);
+    border-radius: 20px;
+    border: 0px;
+    padding-left: 15px;
+    width: 40%;
+}
+
+.desc {
+    border: 0px;
+    background-color: var(--light-colour);
+    color: var(--strong-colour);
+    width: 50%;
+    border-radius: 20px;
+    padding-left: 15px;
+}
+
+.submit button{
+    margin-top: 5px;
+    background-color: transparent;
+    color: var(--bold-colour);
+    border-color: var(--bold-colour);
+    width: 100px;
+    border-radius: 15px;
+}
+
+.profile-photos {
+    text-align: center;
+    display: grid;
+    width: 100%;
+    gap: 3px;
+    grid-template-areas: 
+        'photo photo photo photo del-button metadata'
+        'photo photo photo photo empty description'
+        'like nlikes comment ncomments empty description'
+        'line line line line line line';
+    grid-template-rows: 40px auto 35px 15px;
+    grid-template-columns: 25% 5% 6% 24% 40px auto;
+}
+.profile-photos img {
+    grid-area: photo;
+    max-width: 100%;
+    max-height: 100%;
+    justify-self: center;
+}
+.del-btn {
+    grid-area: del-button;
+    stroke: var(--bold-colour);
+	stroke-width: 1;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+    width: 30px;
+	height: 30px;
+}
+.metadata {
+    grid-area: metadata;
+    align-self: center;
+}
+svg {
+    stroke: var(--bold-colour);
+	stroke-width: 1;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+    width: 28px;
+	height: 30px;
+}
+.like {
+    grid-area: like;
+    justify-self: right;
+}
+.liked {
+    fill: var(--strong-colour);
+}
+.nlikes {
+    grid-area: nlikes;
+    justify-self: left;
+    align-self: center;
+}
+.comment {
+    grid-area: comment;
+    justify-self: right;
+}
+.commented {
+    fill: var(--strong-colour);
+}
+.ncomments {
+    grid-row: ncomments;
+    justify-self: left;
+    align-self: center;
+}
+.photo-desc {
+    grid-area: description;
+}
+.line {
+    grid-area: line;
+    align-self: center;
+    width: 61%;
+    margin-top: 5px;
+}
+svg:hover, img:hover {
+    cursor: pointer;
+}
+</style>

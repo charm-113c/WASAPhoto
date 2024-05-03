@@ -54,13 +54,6 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	// retrieve metadata from header
 	uploadDate := r.Header.Get("upload-date")
-	// get commentID == number of comments on photo + 1
-	photoData, err := rt.db.GetPhotoData(uploaderData.UserID, photoID)
-	if err != nil {
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error retrieving photo data: ", err)
-		return
-	}
 
 	// first, however, check that U2 hasn't banned U1
 	// (all U1 needs to interact with the photo is the ID, which is public and easy to get)
@@ -98,7 +91,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// finally, upload to DB + update ncomments
-	err = rt.db.UploadComment(comment, photoData.Comments, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
+	err = rt.db.UploadComment(comment, commenterData.TotNcomments, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error inserting comment: ", err)

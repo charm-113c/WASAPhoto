@@ -6,7 +6,7 @@
         <br>
         <p>Log in to WASAPhoto! Whether you're a new user or not, entering a username is all it takes!</p>
     </form>
-    <ErrorMsg v-if="errorMsg" :msg="errorMsg" :code="errorCode"></ErrorMsg>
+    <ErrorMsg v-if="showErrMsg" :msg="errorMsg" @close="closeErrMsg"></ErrorMsg>
 </template>
 
 <script>
@@ -14,8 +14,8 @@ export default {
     data() {
         return {
             username: '',
-            errorCode: null,
-            errorMsg: null
+            errorMsg: '',
+            showErrMsg: false,
         }
     },
     methods: {
@@ -29,19 +29,7 @@ export default {
                 sessionStorage.setItem('bearerToken', res.data)
                 this.directToStream()
             } catch (error) {
-                if (error.response) { 
-                    // check if the error is from the response
-                    this.errorCode = error.response.status
-                    this.errorMsg = error.response.data
-                } else if (error.request) {
-                    // or from the request itself
-                    this.errorCode = 400
-                    this.errorMsg = error.request
-                } else {
-                    // or something else entirely
-                    this.errorCode = 500 // when in doubt throw a 500
-                    this.errorMsg = error.message
-                }
+                this.handleError(error)
             }
         },
         directToStream() {
@@ -49,6 +37,21 @@ export default {
             // Stream and eliminate the Login view
             this.$emit('loggedIn')
             this.$router.push({name: 'stream', params: {username: this.username}})
+        },
+        handleError(error) {
+            if (error.response) { 
+                    // check if the error is from the response
+                    this.errorMsg = error.response.data
+                } else if (error.request) {
+                    // or from the request itself
+                    this.errorMsg = error.request
+                } else {
+                    this.errorMsg = error.message
+                }
+            this.showErrMsg = true
+        },
+        closeErrMsg() {
+            this.showErrMsg = false
         },
     }
 }
