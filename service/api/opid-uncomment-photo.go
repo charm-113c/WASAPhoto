@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// rt.router.DELETE("/photos/:photoID/comments/:commentID", rt.uncommentPhoto)
 func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// authenticate requesting user
 	user := r.Header.Get("requesting-user")
@@ -29,8 +27,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 	err = validateToken(r, user1Data.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -39,7 +36,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 	}
 
 	// get uploader's ID
-	uploader := r.Header.Get("uploader")
+	uploader := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -58,6 +58,7 @@ type AppDatabase interface {
 	UnbanUser(user1ID string, user2ID string) error
 	UnlikePhoto(uploaderID string, photoID int, likingUserID string) error
 	UncommentPhoto(uploaderID string, photoID int, commentID int) error
+	GetPhotoWithComments(uploaderID string, photoID int) (PhotoWithComments, error)
 
 	Ping() error
 }
@@ -67,9 +68,12 @@ type appdbimpl struct {
 }
 
 type UserData struct {
+	// Exclusively used in backend, never sent to frontend
 	Username string
 	UserID   string
 	Nphotos  int
+	TotNphotos int // also counts deleted photos, used for photoIDs
+	TotNcomments int // used for commentIDs
 }
 
 // New returns a new instance of AppDatabase based on the SQLite connection `db`.
@@ -87,7 +91,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 		sqlStmt := `CREATE TABLE Users (
 				username TEXT NOT NULL,
 				userID TEXT NOT NULL PRIMARY KEY, 
-				nphotos INTEGER
+				nphotos INTEGER,
+				totnphotos INTEGER,
+				totncomments INTEGER
 			);
 			
 			CREATE TABLE Following (

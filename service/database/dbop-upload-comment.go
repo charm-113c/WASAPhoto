@@ -23,6 +23,15 @@ func (db *appdbimpl) UploadComment(comment string, commentID int, commenterID st
 		}
 		return err
 	}
+	// also increment uploader's totncomments
+	_, err = tx.Exec("UPDATE Users SET totncomments = totncomments + 1 WHERE userID = ?", commenterID)
+	if err != nil {
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
+		return err
+	}
+
 	err = tx.Commit()
 	return err
 }

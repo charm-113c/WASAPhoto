@@ -26,7 +26,7 @@ type WebAPIConfiguration struct {
 		WriteTimeout    time.Duration `conf:"default:5s"`
 		ShutdownTimeout time.Duration `conf:"default:5s"`
 	}
-	Debug bool `conf:"default:true"`
+	Debug bool `conf:"default:false"`
 	DB    struct {
 		Filename string `conf:"default:/tmp/decaf.db"`
 	}

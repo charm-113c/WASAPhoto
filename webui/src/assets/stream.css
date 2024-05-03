@@ -1,0 +1,17 @@
+.container {
+    display: flex;
+    width: 100%;
+    padding: 0;
+    border:0;
+}
+
+.stream {
+    display: flex;
+    flex-direction: column;
+    margin-left: 285px;
+    margin-top: 75px;
+    justify-content: space-around;
+    align-items: center;
+    color: var(--light-colour);
+    width: 100%;
+}

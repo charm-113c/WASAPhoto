@@ -23,6 +23,15 @@ func (db *appdbimpl) UploadImage(photoID int, uID string, binData []byte, desc s
 		}
 		return err
 	}
+	// and increment totnphotos
+	_, err = tx.Exec("UPDATE Users SET totnphotos = totnphotos + 1 WHERE userID = ?", uID)
+	if err != nil {
+		if rberr := tx.Rollback(); rberr != nil {
+			return rberr
+		}
+		return err
+	}
+
 	err = tx.Commit()
 	return err
 }

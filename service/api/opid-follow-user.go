@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -27,8 +26,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	err = validateToken(r, uData.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -80,7 +78,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 	if banned {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "You are blacklisted by searched user")
+		w.Write([]byte("You are blacklisted by searched user"))
 		return
 	}
 
@@ -90,7 +88,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 		// if follow pair already exists, do nothing
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			// log.Println("Hey there buddy")
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		http.Error(w, "Someting went wrong", http.StatusInternalServerError)
@@ -98,6 +96,5 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "All good")
+	w.WriteHeader(http.StatusNoContent)
 }

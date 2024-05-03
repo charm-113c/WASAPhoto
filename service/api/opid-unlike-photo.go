@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -15,7 +14,7 @@ import (
 // rt.router.DELETE("/photos/:photoID/likes/:username", rt.unlikePhoto)
 func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// authenticate liking user
-	username := strings.TrimPrefix(ps.ByName("username"), "username=")
+	username := strings.TrimPrefix(ps.ByName("liker"), "liker=")
 	likingUserData, err := rt.db.GetUserData(username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -29,8 +28,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	err = validateToken(r, likingUserData.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -46,7 +44,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		log.Println("Atoi conversion error: ", err)
 		return
 	}
-	uploader := r.Header.Get("uploader")
+	uploader := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)

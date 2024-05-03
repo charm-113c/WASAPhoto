@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// rt.router.POST("/photos/:photoID/comments", rt.commentPhoto)
 func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// authenticate requester
 	commenter := r.Header.Get("commenter-username")
@@ -31,8 +29,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	err = validateToken(r, commenterData.UserID, rt.seckey)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "token signature is invalid") {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Operation unauthorised, identifier missing or invalid")
+			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			log.Println("Error performing authorization check: ", err)
@@ -41,7 +38,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// retrieve metadata from URI
-	uploader := r.Header.Get("uploader")
+	uploader := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -57,13 +54,6 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	// retrieve metadata from header
 	uploadDate := r.Header.Get("upload-date")
-	// get commentID == number of comments on photo + 1
-	photoData, err := rt.db.GetPhotoData(uploaderData.UserID, photoID)
-	if err != nil {
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error retrieving photo data: ", err)
-		return
-	}
 
 	// first, however, check that U2 hasn't banned U1
 	// (all U1 needs to interact with the photo is the ID, which is public and easy to get)
@@ -101,7 +91,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// finally, upload to DB + update ncomments
-	err = rt.db.UploadComment(comment, photoData.Comments, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
+	err = rt.db.UploadComment(comment, commenterData.TotNcomments, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("Error inserting comment: ", err)

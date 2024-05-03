@@ -1,10 +1,5 @@
 package database
 
-// import (
-// 	"database/sql"
-// 	"errors"
-// )
-
 func (db *appdbimpl) UnlikePhoto(uploaderID string, photoID int, likingUserID string) error {
 	// composite op: deletes a row and decreases a value, so using transactions
 	tx, err := db.c.Begin()

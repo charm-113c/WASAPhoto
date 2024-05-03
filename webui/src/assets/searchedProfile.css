@@ -1,0 +1,39 @@
+.searched-profile {
+    display: flex;
+    flex-direction: column;
+    margin-left: 285px;
+    /* align-items: flex-start; */
+    justify-content: center;
+    width: 100%;
+}
+
+.metadata {
+    display: flex;
+    flex-direction: column;
+}
+.the-man {
+    background-color: var(--strong-colour);
+    margin-top: 5px;
+    padding: 15px 20px 2px 20px;
+    text-align: center;
+    border-radius: 50px;
+}
+.f-buttons {
+    stroke: var(--bold-colour);
+	stroke-width: 1;
+	fill: none;
+    /* height: 50px; */
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-evenly;
+}
+.followed {
+    fill: var(--strong-colour);
+}
+.banned {
+    fill: var(--strong-colour);
+}
+.f-text {
+    display: flex;
+    justify-content: space-evenly;
+}

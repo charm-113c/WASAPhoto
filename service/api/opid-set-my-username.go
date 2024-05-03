@@ -14,7 +14,7 @@ import (
 
 // Update username while checking for auth and username validity
 func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Header().Set("Content-type", "text/plain")
+	w.Header().Set("Content-Type", "text/plain")
 
 	// check authorization
 	currname := strings.TrimPrefix(ps.ByName("username"), "username=")
@@ -40,8 +40,8 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// check new name validity
-	if r.Header.Get("Content-type") != "text/plain" {
-		http.Error(w, "Content-type invalid, want 'text/plain'", http.StatusBadRequest)
+	if r.Header.Get("Content-Type") != "text/plain" {
+		http.Error(w, "Content-Type invalid, want 'text/plain'", http.StatusBadRequest)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
@@ -60,7 +60,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	inDB, err := rt.db.UserInDB(newname)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		fmt.Println("Error searching username in DB: ", err)
+		log.Println("Error searching username in DB: ", err)
 		return
 	}
 	if inDB {
@@ -77,6 +77,4 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-	// fmt.Fprintln(w, "Current username: ", currname)
-	// fmt.Fprint(w, "New name set, your new username is: ", newname)
 }
