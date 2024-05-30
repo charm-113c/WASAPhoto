@@ -1,6 +1,6 @@
 <template>
     <!-- Note: we're assuming photos to be non-empty. It's the upstream view that needs to check that before calling component -->
-    <div class="photo-container" v-for="photo in vphotos" :id="photo.uploader+'/'+photo.id">
+    <div class="photo-container" v-for="photo in vphotos" :key="photo.uploader + photo.id" :id="photo.uploader+'/'+photo.id">
         <span class="header">{{ photo.uploader }} | {{ photo.uploadDate }} </span>
         <img class="photo" :src="photo.src" :alt="photo.description" @click="showImage"/> 
 

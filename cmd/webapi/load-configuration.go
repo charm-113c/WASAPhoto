@@ -28,7 +28,7 @@ type WebAPIConfiguration struct {
 	}
 	Debug bool `conf:"default:false"`
 	DB    struct {
-		Filename string `conf:"default:/tmp/decaf.db"`
+		Filename string `conf:"default:/home/charm/Programming/Project 1/WASAPhoto/db/decaf.db"` //`conf:"default:/tmp/decaf.db"`
 	}
 }
 

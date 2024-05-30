@@ -31,7 +31,7 @@
                 </div>
             </form>
             <hr>
-            <div class="profile-photos" v-for="photo in this.myPhotos" :id="photo.id">
+            <div class="profile-photos" v-for="photo in this.myPhotos" :key="photo.id" :id="photo.id">
                 <img :src="photo.src" :alt="photo.description" @click="showImage">
                 <!-- <button class="del-btn" @click="deletePhoto">Delete Photo</button> <br> -->
                 <svg class="del-btn" :id="photo.id + '.'" @click="showDialog">
@@ -385,4 +385,4 @@ svg {
 svg:hover, img:hover {
     cursor: pointer;
 }
-</style>
+</style>photophoto

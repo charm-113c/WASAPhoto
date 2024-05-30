@@ -23,7 +23,7 @@ func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httproute
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("getPhoto() -> rt.db.GetUserData(username) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
@@ -32,7 +32,7 @@ func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httproute
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("getPhoto() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -45,7 +45,7 @@ func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httproute
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("getPhoto() -> rt.db.GetUserData(uploader) -> Error getting user data: ", err)
 		return
 	}
 	// get photoID
@@ -53,27 +53,27 @@ func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httproute
 	photoID, err := strconv.Atoi(pID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi conversion error: ", err)
+		log.Println("getPhoto() -> strconv.Atoi() -> Atoi conversion error: ", err)
 		return
 	}
 	// finally, get photo
 	photoWithCom, err := rt.db.GetPhotoWithComments(u2Data.UserID, photoID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting selected photo: ", err)
+		log.Println("getPhoto() -> rt.db.GetPhotoWithComments() -> Error getting selected photo: ", err)
 		return
 	}
 	// and prepare to send it out
 	out, err := json.Marshal(photoWithCom)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error marshaling photo with comments: ", err)
+		log.Println("getPhoto() -> json.Marshal() -> Error marshaling photo with comments: ", err)
 		return
 	}
 	// and send
 	_, err = w.Write(out)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error writing out photo with comments: ", err)
+		log.Println("getPhoto() -> w.Write() -> Error writing out photo with comments: ", err)
 	}
 }

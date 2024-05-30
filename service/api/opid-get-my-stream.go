@@ -23,7 +23,7 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("getMyStream() -> rt.db.GetUserData(user) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
@@ -32,7 +32,7 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("getMyStream() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -42,7 +42,7 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 	stream, err := rt.db.GetFollowedPhotos(uData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error retrieving followed users' photos: ", err)
+		log.Println("getMyStream() -> rt.db.GetFollowedPhotos() -> Error retrieving followed users' photos: ", err)
 		return
 	}
 
@@ -55,14 +55,14 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 	out, err := json.Marshal(stream)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error marshalling followed users' photos: ", err)
+		log.Println("getMyStream() -> json.Marshal() -> Error marshalling followed users' photos: ", err)
 		return
 	}
 	// and we output
 	_, err = w.Write(out)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error sending user's stream: ", err)
+		log.Println("getMyStream() -> w.Write() -> Error sending user's stream: ", err)
 		return
 	}
 

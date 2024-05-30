@@ -21,7 +21,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("uncommentPhoto() -> rt.db.GetUserData(user) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
@@ -30,7 +30,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("uncommentPhoto() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -44,7 +44,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("uncommentPhoto() -> rt.db.GetUserData(uploader) -> Error getting user data: ", err)
 		return
 	}
 	// get photoID
@@ -52,7 +52,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 	photoID, err := strconv.Atoi(pID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi conversion error: ", err)
+		log.Println("uncommentPhoto() -> strconv.Atoi(pID) -> Atoi conversion error: ", err)
 		return
 	}
 	// same for commentID
@@ -60,15 +60,15 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 	commentID, err := strconv.Atoi(cID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi conversion error: ", err)
+		log.Println("uncommentPhoto() -> strconv.Atoi(cID) -> Atoi conversion error: ", err)
 		return
 	}
 
 	// proceed to uncomment
-	err = rt.db.UncommentPhoto(uploaderData.UserID, photoID, commentID)
+	err = rt.db.UncommentPhoto(uploaderData.UserID, photoID, commentID, user1Data.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error uncommenting photo in DB: ", err)
+		log.Println("uncommentPhoto() -> rt.db.UncommentPhoto -> Error uncommenting photo in DB: ", err)
 		return
 	}
 

@@ -25,7 +25,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("setMyUsername() -> rt.db.GetUserData() -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
@@ -34,7 +34,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("setMyUsername() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -47,7 +47,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error reading body: ", err)
+		log.Println("setMyUsername() -> io.ReadAll() -> Error reading body: ", err)
 		return
 	}
 	newname := string(body)
@@ -60,7 +60,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	inDB, err := rt.db.UserInDB(newname)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error searching username in DB: ", err)
+		log.Println("setMyUsername() -> rt.db.UserInDB() -> Error searching username in DB: ", err)
 		return
 	}
 	if inDB {
@@ -73,7 +73,7 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	err = rt.db.SetNewName(currname, newname)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error updating username in DB: ", err)
+		log.Println("setMyUsername() -> rt.db.SetNewName() -> Error updating username in DB: ", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

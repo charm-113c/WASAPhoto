@@ -1,6 +1,6 @@
 package database
 
-func (db *appdbimpl) UncommentPhoto(uploaderID string, photoID int, commentID int) error {
+func (db *appdbimpl) UncommentPhoto(uploaderID string, photoID int, commentID int, commenterID string) error {
 	// composite operation: delete comment + decrement ncomments -> use transactions
 	tx, err := db.c.Begin()
 	if err != nil {
@@ -8,7 +8,7 @@ func (db *appdbimpl) UncommentPhoto(uploaderID string, photoID int, commentID in
 	}
 
 	// delete specified comment
-	r, err := tx.Exec("DELETE FROM Comments WHERE photoUploaderID = ? AND photoID = ? and commentID = ?", uploaderID, photoID, commentID)
+	r, err := tx.Exec("DELETE FROM Comments WHERE photoUploaderID = ? AND photoID = ? and commentID = ? and commenterID = ?", uploaderID, photoID, commentID, commenterID)
 	if err != nil {
 		if rberr := tx.Rollback(); rberr != nil {
 			return rberr

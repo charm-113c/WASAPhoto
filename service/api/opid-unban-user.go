@@ -21,7 +21,7 @@ func (rt *_router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprout
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("unbanUser() -> rt.db.GetUserData(username) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
@@ -30,7 +30,7 @@ func (rt *_router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprout
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("unbanUser() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -44,14 +44,14 @@ func (rt *_router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprout
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("unbanUser() -> rt.db.GetUserData(targetUser) -> Error getting user data: ", err)
 		return
 	}
 
 	err = rt.db.UnbanUser(user1Data.UserID, user2Data.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error deleting blacklist pair: ", err)
+		log.Println("unbanUser() -> rt.db.UnbanUser() -> Error deleting blacklist pair: ", err)
 		return
 	}
 

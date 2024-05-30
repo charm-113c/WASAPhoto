@@ -11,6 +11,7 @@ type UserProfile struct {
 	Nphotos   int
 	Followers []string
 	Following []string
+	Blacklist []string
 }
 
 type Photo struct {

@@ -20,7 +20,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("followUser() -> rt.db.GetUserData(username) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
@@ -29,7 +29,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("followUser() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -43,7 +43,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking user's presence in DB: ", err)
+		log.Println("followUser() -> rt.db.UserInDB() -> Error checking user's presence in DB: ", err)
 		return
 	}
 	if !exist {
@@ -55,35 +55,34 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	// get user1 and 2's ID
-	user1Data, err := rt.db.GetUserData(username)
-	if err != nil {
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error retrieving user data: ", err)
-		return
-	}
+	// get user2's ID
 	user2Data, err := rt.db.GetUserData(target_user)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error retrieving user data: ", err)
+		log.Println("followUser() -> rt.db.GetUserData(target_user) -> Error retrieving user data: ", err)
 		return
 	}
 
 	// next check that user2 hasn't banned user1
-	banned, err := rt.db.HasBanned(user2Data.UserID, user1Data.UserID)
+	banned, err := rt.db.HasBanned(user2Data.UserID, uData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking blacklist pair in DB: ", err)
+		log.Println("followUser() -> rt.db.HasBanned() -> Error checking blacklist pair in DB: ", err)
 		return
 	}
 	if banned {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("You are blacklisted by searched user"))
+		_, err = w.Write([]byte("You are blacklisted by searched user"))
+		if err != nil {
+			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+			log.Println("followUser() -> w.Write() -> Error checking blacklist pair in DB: ", err)
+			return
+		}
 		return
 	}
 
 	// update DB
-	err = rt.db.FollowUser(user1Data.UserID, user2Data.UserID)
+	err = rt.db.FollowUser(uData.UserID, user2Data.UserID)
 	if err != nil {
 		// if follow pair already exists, do nothing
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
@@ -92,7 +91,7 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 			return
 		}
 		http.Error(w, "Someting went wrong", http.StatusInternalServerError)
-		log.Println("Error adding follow pair in DB: ", err)
+		log.Println("followUser() -> rt.db.FollowUser() -> Error adding follow pair in DB: ", err)
 		return
 	}
 

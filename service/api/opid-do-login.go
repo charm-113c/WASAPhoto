@@ -23,7 +23,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error reading body: ", err)
+		log.Println("doLogin() -> io.ReadAll() -> Error reading body: ", err)
 		return
 	}
 	username := string(body)
@@ -38,7 +38,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	inDB, err := rt.db.UserInDB(username)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error searching username in DB: ", err)
+		log.Println("doLogin() -> rt.db.UserInDB() -> Error searching username in DB: ", err)
 		return
 	}
 	if !inDB {
@@ -46,14 +46,14 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 		uid, err := uuid.NewV7()
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error creating userID: ", err)
+			log.Println("doLogin() -> uuid.NewV7() -> Error creating userID: ", err)
 			return
 		}
 		// add user with nphotos=0
 		err = rt.db.AddUser(username, uid.String())
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error adding user to DB: ", err)
+			log.Println("doLogin() -> rt.db.AddUser() -> Error adding user to DB: ", err)
 			return
 		}
 	}
@@ -61,7 +61,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	uData, err := rt.db.GetUserData(username)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("doLogin() -> rt.db.GetUserData() -> Error getting user data: ", err)
 		return
 	}
 	// create JWT token for bearer auth
@@ -69,20 +69,20 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	signedToken, err := token.SignedString([]byte(rt.seckey))
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error signing JWT token: ", err)
+		log.Println("doLogin() -> token.SignedString() -> Error signing JWT token: ", err)
 		return
 	}
 	// marshall and output the token
 	out, err := json.Marshal(signedToken)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error marshalling token: ", err)
+		log.Println("doLogin() -> json.Marshall() -> Error marshalling token: ", err)
 		return
 	}
 	_, err = w.Write(out)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error sending token: ", err)
+		log.Println("doLogin() -> w.Write() -> Error sending token: ", err)
 		return
 	}
 }

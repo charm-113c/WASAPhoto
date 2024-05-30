@@ -57,8 +57,9 @@ type AppDatabase interface {
 	DeletePhoto(userID string, photoID int) error
 	UnbanUser(user1ID string, user2ID string) error
 	UnlikePhoto(uploaderID string, photoID int, likingUserID string) error
-	UncommentPhoto(uploaderID string, photoID int, commentID int) error
+	UncommentPhoto(uploaderID string, photoID int, commentID int, commenterID string) error
 	GetPhotoWithComments(uploaderID string, photoID int) (PhotoWithComments, error)
+	GetBlacklist(userID string) ([]string, error)
 
 	Ping() error
 }
@@ -142,7 +143,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 				photoID INTEGER NOT NULL,
 				photoUploaderID TEXT NOT NULL,
 				uploadDate DATETIME,
-				PRIMARY KEY (commentID, photoID, photoUploaderID),
+				PRIMARY KEY (commentID, photoID, photoUploaderID, commenterID),
 				FOREIGN KEY (photoID) REFERENCES Photos(photoID),
 				FOREIGN KEY (commenterID) REFERENCES Users(userID),
 				FOREIGN KEY (photoUploaderID) REFERENCES Users(userID)

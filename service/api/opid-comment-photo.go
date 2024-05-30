@@ -23,7 +23,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error retrieving user data: ", err)
+		log.Println("commentPhoto() -> rt.db.GetUserData(commenter) -> Error retrieving user data: ", err)
 		return
 	}
 	err = validateToken(r, commenterData.UserID, rt.seckey)
@@ -32,7 +32,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("commentPhoto() -> rt.db.validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -42,14 +42,14 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error retrieving user data: ", err)
+		log.Println("commentPhoto() -> rt.db.GetUserData(uploader) -> Error retrieving user data: ", err)
 		return
 	}
 	pID := strings.TrimPrefix(ps.ByName("photoID"), "photoID=")
 	photoID, err := strconv.Atoi(pID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi error conversion: ", err)
+		log.Println("commentPhoto() -> strconv.Atoi() -> Atoi error conversion: ", err)
 		return
 	}
 	// retrieve metadata from header
@@ -60,7 +60,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	banned, err := rt.db.HasBanned(uploaderData.UserID, commenterData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking blacklist pair in DB: ", err)
+		log.Println("commentPhoto() -> rt.db.HasBanned() -> Error checking blacklist pair in DB: ", err)
 		return
 	}
 	if banned {
@@ -76,7 +76,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error reading request body: ", err)
+		log.Println("commentPhoto() -> io.ReadAll() -> Error reading request body: ", err)
 		return
 	}
 	comment := string(raw)
@@ -92,9 +92,9 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 
 	// finally, upload to DB + update ncomments
 	err = rt.db.UploadComment(comment, commenterData.TotNcomments, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
-	if err != nil {
+	if err != nil { 
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error inserting comment: ", err)
+		log.Println("commentPhoto() -> rt.db.UploadComment() -> Error inserting comment: ", err)
 		return
 	}
 

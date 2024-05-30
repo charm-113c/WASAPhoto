@@ -21,7 +21,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("unfollowUser() -> rt.db.GetUserData(username) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
@@ -30,7 +30,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("unfollowUser() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -44,7 +44,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("unfollowUser() -> rt.db.GetUserData(targetUser) -> Error getting user data: ", err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	err = rt.db.UnfollowUser(user1Data.UserID, user2Data.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error deleting follow pair: ", err)
+		log.Println("unfollowUser() -> rt.db.UnfollowUser() -> Error deleting follow pair: ", err)
 		return
 	}
 

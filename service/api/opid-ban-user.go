@@ -22,7 +22,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data")
+		log.Println("banUser()-> rt.db.GetUserData(user)-> Error getting user data")
 		return
 	}
 	user2Data, err := rt.db.GetUserData(user2)
@@ -32,7 +32,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data")
+		log.Println("banUser()-> rt.db.GetUserData(user2)-> Error getting user data")
 		return
 	}
 	err = validateToken(r, user1Data.UserID, rt.seckey)
@@ -41,7 +41,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("banUser()-> validateToken()-> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -50,7 +50,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	ok, err := rt.db.UserInDB(user2)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking user existence: ", err)
+		log.Println("banUser()-> rt.db.UserInDB()-> Error checking user existence: ", err)
 		return
 	}
 	switch {
@@ -66,7 +66,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	err = rt.db.UnfollowUser(user2Data.UserID, user1Data.UserID) // done first as op is idempotent and doesn't error on sqlErrNoRows
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error adding blacklist pair to DB: ", err)
+		log.Println("banUser()-> rt.db.UnfollowUser()-> Error adding blacklist pair to DB: ", err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	banned, err := rt.db.HasBanned(user1Data.UserID, user2Data.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking blacklist pair in DB: ", err)
+		log.Println("banUser()-> rt.db.HasBanned()-> Error checking blacklist pair in DB: ", err)
 		return
 	}
 	if banned {
@@ -86,7 +86,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	err = rt.db.BanUser(user1Data.UserID, user2Data.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error adding blacklist pair to DB: ", err)
+		log.Println("banUser()-> rt.db.BanUser()-> Error adding blacklist pair to DB: ", err)
 		return
 	}
 

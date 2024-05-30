@@ -5,6 +5,7 @@
         <!-- <button class="submit" @click="doLogin">Login</button> -->
         <br>
         <p>Log in to WASAPhoto! Whether you're a new user or not, entering a username is all it takes!</p>
+        <span><small>Usernames must be between 3-30 characters long, and the characters must be alphanumerical</small></span>
     </form>
     <ErrorMsg v-if="showErrMsg" :msg="errorMsg" @close="closeErrMsg"></ErrorMsg>
 </template>

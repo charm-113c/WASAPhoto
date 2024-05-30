@@ -22,7 +22,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("unlikePhoto() -> rt.db.GetUserData(username) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, likingUserData.UserID, rt.seckey)
@@ -31,7 +31,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("unlikePhoto() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -41,14 +41,14 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	photoID, err := strconv.Atoi(pID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi conversion error: ", err)
+		log.Println("unlikePhoto() -> strconv.Atoi() -> Atoi conversion error: ", err)
 		return
 	}
 	uploader := strings.TrimPrefix(ps.ByName("username"), "username=")
 	uploaderData, err := rt.db.GetUserData(uploader)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("unlikePhoto() -> rt.db.GetUserData(uploader) -> Error getting user data: ", err)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	err = rt.db.UnlikePhoto(uploaderData.UserID, photoID, likingUserData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error unliking photo: ", err)
+		log.Println("unlikePhoto() -> rt.db.UnlikePhoto() -> Error unliking photo: ", err)
 		return
 	}
 

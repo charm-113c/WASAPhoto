@@ -22,7 +22,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("deletePhoto() -> rt.db.GetUserData(username) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, userData.UserID, rt.seckey)
@@ -31,7 +31,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("deletePhoto() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -42,13 +42,13 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	photoID, err := strconv.Atoi(pID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi conversion error: ", err)
+		log.Println("deletePhoto() -> strconv.Atoi() -> Atoi conversion error: ", err)
 		return
 	}
 	err = rt.db.DeletePhoto(userData.UserID, photoID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error deleting photo from DB: ", err)
+		log.Println("deletePhoto() -> rt.db.DeletePhoto() -> Error deleting photo from DB: ", err)
 		return
 	}
 

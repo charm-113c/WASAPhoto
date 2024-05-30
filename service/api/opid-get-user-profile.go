@@ -30,7 +30,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("getUserProfile() -> rt.db.GetUserData(user) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
@@ -39,7 +39,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("getUserProfile() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -50,31 +50,25 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 	ok, err := rt.db.UserInDB(target_user)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking user existence: ", err)
+		log.Println("getUserProfile() -> rt.db.UserInDB() -> Error checking user existence: ", err)
 		return
 	}
 	if !ok {
 		http.Error(w, "Searched user does not exist", http.StatusBadRequest)
 		return
 	}
-	user1Data, err := rt.db.GetUserData(user)
-	if err != nil {
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
-		return
-	}
 	targetUserData, err := rt.db.GetUserData(target_user)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("getUserProfile() -> rt.db.GetUserData(target_user) -> Error getting user data: ", err)
 		return
 	}
 
 	// check if target has banned searching user
-	banned, err := rt.db.HasBanned(targetUserData.UserID, user1Data.UserID)
+	banned, err := rt.db.HasBanned(targetUserData.UserID, uData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking blacklist pair in DB: ", err)
+		log.Println("getUserProfile() -> rt.db.HasBanned() -> Error checking blacklist pair in DB: ", err)
 		return
 	}
 	if banned {
@@ -88,7 +82,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 	targetPhotos, err := rt.db.GetPhotos(targetUserData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user photos: ", err)
+		log.Println("getUserProfile() -> rt.db.GetPhotos() -> Error getting user photos: ", err)
 		return
 	}
 	// sorting photos in reverse chrono order
@@ -100,13 +94,20 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 	followers, err := rt.db.GetFollowers(targetUserData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user's followers: ", err)
+		log.Println("getUserProfile() -> rt.db.GetFollowes() -> Error getting user's followers: ", err)
 		return
 	}
 	following, err := rt.db.GetFollowing(targetUserData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user's following: ", err)
+		log.Println("getUserProfile() -> rt.db.GetFollowing() -> Error getting user's following: ", err)
+		return
+	}
+	// We also need current user's blacklist to see if they've banned target user
+	blacklist, err := rt.db.GetBlacklist(uData.UserID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		log.Println("getUserProfile() -> rt.db.GetBlacklist() -> Error getting user's blacklist: ", err)
 		return
 	}
 
@@ -117,11 +118,14 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 		Nphotos:   targetUserData.Nphotos,
 		Followers: followers,
 		Following: following,
+		Blacklist: blacklist,
+		// While it is misleading to have blacklist here, the frontend dev also happens to be me
+		// so we got some good coordination going
 	}
 	out, err := json.Marshal(targetProfile)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error marshalling user profile: ", err)
+		log.Println("getUserProfile() -> json.Marshal() -> Error marshalling user profile: ", err)
 		return
 	}
 
@@ -129,7 +133,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 	_, err = w.Write(out)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error outputing user profile: ", err)
+		log.Println("getUserProfile() -> w.Write() -> Error outputing user profile: ", err)
 		return
 	}
 }

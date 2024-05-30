@@ -22,7 +22,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 			return
 		}
 		http.Error(w, "Something went wrong while uploading the photo", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("uploadPhoto() -> rt.db.GetUserData() -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, uData.UserID, rt.seckey)
@@ -31,7 +31,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong while uploading the photo", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("uploadPhoto() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -40,7 +40,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	err = r.ParseMultipartForm(32 << 20) // max size of 32 MB
 	if err != nil {
 		http.Error(w, "Something went wrong while uploading the photo", http.StatusInternalServerError)
-		log.Println("Error parsing form data: ", err)
+		log.Println("uploadPhoto() -> r.ParseMultiForm() -> Error parsing form data: ", err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	imgFile, handler, err := r.FormFile("UploadedImage")
 	if err != nil {
 		http.Error(w, "Something went wrong while uploading the photo", http.StatusInternalServerError)
-		log.Println("Error getting form file: ", err)
+		log.Println("uploadPhoto() -> r.FormFile() -> Error getting form file: ", err)
 		return
 	}
 	defer imgFile.Close()
@@ -61,14 +61,14 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	imgData, err := io.ReadAll(imgFile)
 	if err != nil {
 		http.Error(w, "Something went wrong while uploading the photo", http.StatusInternalServerError)
-		log.Println("Error reading img file:", err)
+		log.Println("uploadPhoto() -> io.ReadAll() -> Error reading img file:", err)
 		return
 	}
 	// we're now ready to upload (photoID = user's current TotNphotos -> also counts deleted photos)
 	err = rt.db.UploadImage(uData.TotNphotos, uData.UserID, imgData, imgDesc, upDate, imgExtension)
 	if err != nil {
 		http.Error(w, "Something went wrong while uploading the photo", http.StatusInternalServerError)
-		log.Println("Error uploading image to DB: ", err)
+		log.Println("uploadPhoto() -> rt.db.UploadImage() -> Error uploading image to DB: ", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

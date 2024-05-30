@@ -23,7 +23,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("likePhoto() -> rt.db.GetUserData(likeuser) -> Error getting user data: ", err)
 		return
 	}
 	err = validateToken(r, likeUserData.UserID, rt.seckey)
@@ -32,7 +32,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 			http.Error(w, "Operation unauthorised, identifier missing or invalid", http.StatusUnauthorized)
 		} else {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
-			log.Println("Error performing authorization check: ", err)
+			log.Println("likePhoto() -> validateToken() -> Error performing authorization check: ", err)
 		}
 		return
 	}
@@ -42,14 +42,14 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 	uploaderData, err := rt.db.GetUserData(up)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error getting user data: ", err)
+		log.Println("likePhoto() -> rt.db.GetUserData(up) -> Error getting user data: ", err)
 		return
 	}
 	pID := strings.TrimPrefix(ps.ByName("photoID"), "photoID=")
 	photoID, err := strconv.Atoi(pID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Atoi conversion error: ", err)
+		log.Println("likePhoto() -> strconv.Atoi() -> Atoi conversion error: ", err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 	banned, err := rt.db.HasBanned(uploaderData.UserID, likeUserData.UserID)
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error checking blacklist pair in DB: ", err)
+		log.Println("likePhoto() -> rt.db.HasBanned() -> Error checking blacklist pair in DB: ", err)
 		return
 	}
 	if banned {
@@ -74,7 +74,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		log.Println("Error inserting likePhoto tuple: ", err)
+		log.Println("likePhoto() -> rt.db.LikePhoto() -> Error inserting likePhoto tuple: ", err)
 		return
 	}
 

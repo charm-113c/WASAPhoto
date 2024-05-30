@@ -19,7 +19,7 @@
         <div class="comment-section">
             <input type="text" v-model="newComment" @keydown="postComment" placeholder="Write a comment"/>
         
-            <div class="comment-container" v-for="comment in comments" :id="comment.name +'/'+ comment.id">
+            <div class="comment-container" v-for="comment in comments" :key="comment.name + comment.id" :id="comment.name +'/'+ comment.id">
                 <span class="commenter">{{ comment.name }} on {{ comment.date }}</span>
                 <svg class="del-button" v-if="comment.isMyComm" :id="comment.name +'|'+ comment.id" @click="showDialog">
                     <use href="/feather-sprite-v4.29.0.svg#trash-2"/>

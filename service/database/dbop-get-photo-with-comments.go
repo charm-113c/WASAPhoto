@@ -78,6 +78,9 @@ func (db *appdbimpl) GetPhotoWithComments(uploaderID string, photoID int) (Photo
 		}
 		out.Likers = append(out.Likers, uname)
 	}
+	if err = lRows.Err(); err != nil {
+		return out, err
+	}
 
 	return out, nil
 }

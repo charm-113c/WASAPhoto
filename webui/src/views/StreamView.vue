@@ -11,6 +11,9 @@
         <Sidebar></Sidebar>
         <div class="stream">
             <PhotoContainer :photos="streamPhotos"></PhotoContainer>
+            <p v-if="emptyStream"> 
+                <br> Looks like there's nothing to show yet. Follow others and see if this changes!
+            </p>
         </div>      
     </div>
 
@@ -54,20 +57,25 @@ export default {
                 const res = await this.$axios.get(`/users/${this.username}/stream`,
                     { headers: {'Authorization': sessionStorage.getItem('bearerToken')}})
                 // and handle the JSON data (photos + metadata)
-                res.data.forEach(photo => {
-                    // transform the JSON'ed imgFile into a data URI by encoding it to base 64
-                    // effectively transforming it into a file again and allowing it to be used 
-                    // as src for img tags 
-                    let imgSRC = `data:${photo.FileExtension};base64,${photo.BinaryData}`
-                    this.streamPhotos[photo.Uploader + photo.PhotoID] = {
-                        'src': imgSRC, 'uploader': photo.Uploader, 'description': photo.Description, 'uploadDate': new Date(photo.UploadDate).toUTCString(), 
-                        'likes': photo.Likes, 'comments': photo.Comments, 'liked': false, 'id':photo.PhotoID
-                    }
-                    // set 'liked' to true if user has liked the photo
-                    if (photo.Likers) {
-                        this.streamPhotos[photo.Uploader + photo.PhotoID].liked = photo.Likers.includes(this.username)
-                    }
-                })
+                if (res.data === null) {
+                    this.emptyStream = true
+                } else {
+                    res.data.forEach(photo => {
+                        // transform the JSON'ed imgFile into a data URI by encoding it to base 64
+                        // effectively transforming it into a file again and allowing it to be used 
+                        // as src for img tags 
+                        let imgSRC = `data:${photo.FileExtension};base64,${photo.BinaryData}`
+                        this.streamPhotos[photo.Uploader + photo.PhotoID] = {
+                            'src': imgSRC, 'uploader': photo.Uploader, 'description': photo.Description, 'uploadDate': new Date(photo.UploadDate).toUTCString(), 
+                            'likes': photo.Likes, 'comments': photo.Comments, 'liked': false, 'id':photo.PhotoID
+                        }
+                        // set 'liked' to true if user has liked the photo
+                        if (photo.Likers) {
+                            this.streamPhotos[photo.Uploader + photo.PhotoID].liked = photo.Likers.includes(this.username)
+                        }
+                    })
+                }
+                
             } catch (error) {
                 if (error.message === 'res.data is null') {
                     this.emptyStream = true

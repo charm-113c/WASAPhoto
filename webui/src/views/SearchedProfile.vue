@@ -58,6 +58,7 @@ export default {
             nFollowers: 0,
             following: [],
             nFollowing: 0,
+            blacklist: [],
             showErrMsg: false,
             errorMsg: '',
             noPhotos: false,
@@ -87,6 +88,11 @@ export default {
                     this.following = ''
                     this.nFollowing = 0
                 }
+                if (res.data.Blacklist !== null) {
+                    // !! Blacklist is actually requesting user's blacklist !!
+                    // so we check if requesting user has banned searched user
+                    this.userBanned = res.data.Blacklist.includes(this.user2)
+                } 
                 // photos are a particular case
                 if (res.data.Photos === null) {
                     this.noPhotos = true
