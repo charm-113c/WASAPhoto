@@ -1,0 +1,17 @@
+# Create first image to build the backend
+FROM golang:1.22.3 AS builder
+
+WORKDIR /src/
+COPY . .
+
+RUN go build -o /app/webapi ./cmd/webapi
+
+# Then only keep the necessary part, i.e. the executable
+FROM debian:bookworm 
+
+EXPOSE 3000
+
+WORKDIR /app/
+COPY --from=builder /app/webapi ./
+
+CMD ["/app/webapi"]
