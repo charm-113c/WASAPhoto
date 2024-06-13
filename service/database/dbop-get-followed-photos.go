@@ -33,11 +33,11 @@ func (db *appdbimpl) GetFollowedPhotos(userID string) ([]Photo, error) {
 		var photo Photo
 		err = rows.Scan(&photo.PhotoID, &photo.Uploader, &photo.BinaryData, &photo.Description, &photo.Likes, &photo.UploadDate, &photo.FileExtension, &photo.Comments, &photo.Likers)
 		if err != nil {
-			if !strings.Contains(err.Error(),`"GROUP_CONCAT(likers.username)": converting NULL to string is unsupported`) {
+			if !strings.Contains(err.Error(), `"GROUP_CONCAT(likers.username)": converting NULL to string is unsupported`) {
 				return nil, err
 			}
 			// the above check is to see if Likers is NULL (empty), in which case we simply set likers to an empty str
-			photo.Likers = "" 
+			photo.Likers = ""
 		}
 		out = append(out, photo)
 	}

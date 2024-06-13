@@ -92,7 +92,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 
 	// finally, upload to DB + update ncomments
 	err = rt.db.UploadComment(comment, commenterData.TotNcomments, commenterData.UserID, photoID, uploaderData.UserID, uploadDate)
-	if err != nil { 
+	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		log.Println("commentPhoto() -> rt.db.UploadComment() -> Error inserting comment: ", err)
 		return

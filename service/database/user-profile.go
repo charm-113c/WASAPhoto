@@ -27,10 +27,10 @@ type Photo struct {
 }
 
 type Comment struct {
-	CommentID   	int
-	CommentText 	string
-	CommenterName  	string
-	CommentDate  	time.Time
+	CommentID     int
+	CommentText   string
+	CommenterName string
+	CommentDate   time.Time
 }
 
 type PhotoWithComments struct {

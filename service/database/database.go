@@ -70,10 +70,10 @@ type appdbimpl struct {
 
 type UserData struct {
 	// Exclusively used in backend, never sent to frontend
-	Username string
-	UserID   string
-	Nphotos  int
-	TotNphotos int // also counts deleted photos, used for photoIDs
+	Username     string
+	UserID       string
+	Nphotos      int
+	TotNphotos   int // also counts deleted photos, used for photoIDs
 	TotNcomments int // used for commentIDs
 }
 

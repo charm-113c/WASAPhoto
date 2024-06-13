@@ -30,7 +30,7 @@ func (db *appdbimpl) GetPhotos(userID string) ([]Photo, error) {
 		var photo Photo
 		err = rows.Scan(&photo.PhotoID, &photo.Uploader, &photo.BinaryData, &photo.Description, &photo.Likes, &photo.UploadDate, &photo.FileExtension, &photo.Comments, &photo.Likers)
 		if err != nil {
-			if !strings.Contains(err.Error(),`"GROUP_CONCAT(likers.username)": converting NULL to string is unsupported`) {
+			if !strings.Contains(err.Error(), `"GROUP_CONCAT(likers.username)": converting NULL to string is unsupported`) {
 				return nil, err
 			}
 			photo.Likers = ""

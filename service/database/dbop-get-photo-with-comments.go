@@ -24,7 +24,7 @@ func (db *appdbimpl) GetPhotoWithComments(uploaderID string, photoID int) (Photo
 		}
 		// else no photos
 		return PhotoWithComments{}, nil
-		
+
 	}
 	// then its comments
 	cRows, err := db.c.Query(`SELECT 
