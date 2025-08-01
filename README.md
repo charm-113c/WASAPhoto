@@ -1,15 +1,13 @@
-
 # WASAPhoto
-
-Repo of the WASAPhoto project for ACSAI
-http://gamificationlab.uniroma1.it/en/wasa/
 
 Full name: Randrianantoandro Andry Ambinintsoa
 Student ID: 1891313
 
-The WASAPhoto project for the WASA class of 2023-2024 consists in creating a social network that allows users to see pictures 
-of other users and upload their own. It is subdivided in of 4 homeworks, one for each phase of the development (API specification, 
-backend, frontend and dockers). The design specifications are as follows: 
+## Specifications
+
+The WASAPhoto project for the WASA class of 2023-2024 consists in creating a social network that allows users to see pictures
+of other users and upload their own. It is subdivided in of 4 homeworks, one for each phase of the development (API specification,
+backend, frontend and dockers). The design specifications are as follows:
 
 Each user will be presented with a stream of photos (images) in reverse chronological order, with
 information about when each photo was uploaded (date and time) and how many likes and comments
@@ -23,137 +21,51 @@ chronological order), how many photos have been uploaded, and the user’s follo
 Users can change their usernames, upload photos, remove photos, and follow/unfollow other users.
 Removal of an image will also remove likes and comments.
 A user can search other user profiles via username.
-A user can log in just by specifying the username. See the “Simplified login” section for details.
+A user can log in just by specifying the username.
 
+## Quick start
 
+The easiest way is through docker containers, and since we'll need both the frontend and the backend
+we'll need two terminal windows, both in the project's root directory:
 
-# Fantastic coffee (decaffeinated)
+In the first window, build and then run the backend server with:
 
-This repository contains the basic structure for [Web and Software Architecture](http://gamificationlab.uniroma1.it/en/wasa/) homework project.
-It has been described in class.
+```sh
+docker build -f Dockerfile.backend -t backend .
+docker run -it --rm -p 3000:3000 backend
+```
 
-"Fantastic coffee (decaffeinated)" is a simplified version for the WASA course, not suitable for a production environment.
-The full version can be found in the "Fantastic Coffee" repository.
+Now the backend server is up and listening to requests.
+In the second window, start the frontend with:
+
+```sh
+docker build -f Dockerfile.frontend -t frontend .
+docker run -it --rm -p 8080:80 frontend
+```
+
+**Now entering the address <http://localhost:8080> will open the login page
+of the web app.**
 
 ## Project structure
 
-* `cmd/` contains all executables; Go programs here should only do "executable-stuff", like reading options from the CLI/env, etc.
-	* `cmd/healthcheck` is an example of a daemon for checking the health of servers daemons; useful when the hypervisor is not providing HTTP readiness/liveness probes (e.g., Docker engine)
-	* `cmd/webapi` contains an example of a web API server daemon
-* `demo/` contains a demo config file
-* `doc/` contains the documentation (usually, for APIs, this means an OpenAPI file)
-* `service/` has all packages for implementing project-specific functionalities
-	* `service/api` contains an example of an API server
-	* `service/globaltime` contains a wrapper package for `time.Time` (useful in unit testing)
-* `vendor/` is managed by Go, and contains a copy of all dependencies
-* `webui/` is an example of a web frontend in Vue.js; it includes:
-	* Bootstrap JavaScript framework
-	* a customized version of "Bootstrap dashboard" template
-	* feather icons as SVG
-	* Go code for release embedding
+This project follows the template given in class. As such,
 
-Other project files include:
-* `open-npm.sh` starts a new (temporary) container using `node:lts` image for safe web frontend development (you don't want to use `npm` in your system, do you?)
+- The `doc` directory contains the OpenAPI file documenting the RESTful APIs
+- The `cmd` and `service` directories are the main components of the backend,
+  - `cmd` contains the `main.go` file, responsible for starting up the server and connecting to the frontend
+  - `service` contains the business logic, so the HTTP handlers as well as the DB operations
+- The `webui` contains to the frontend, containing all the elements to build it
+- Dockerfiles to run both frontend and backend in their own container
+- Other auxiliary files, like a custom shell script for testing, or Golang's vendor and mod/sum files
 
-## Go vendoring
+## Some screenshots
 
-This project uses [Go Vendoring](https://go.dev/ref/mod#vendoring). You must use `go mod vendor` after changing some dependency (`go get` or `go mod tidy`) and add all files under `vendor/` directory in your commit.
+Here are some screenshots of what the app looks like:
 
-For more information about vendoring:
+![Home page](screenshots/Homepage.png "Homepage")
 
-* https://go.dev/ref/mod#vendoring
-* https://www.ardanlabs.com/blog/2020/04/modules-06-vendoring.html
+![Profile page](screenshots/Profile-1.png "Own profile page")
 
-## Node/NPM vendoring
+![Another user's profile page](screenshots/Profile-2.png "Another user's profile page")
 
-This repository contains the `webui/node_modules` directory with all dependencies for Vue.JS. You should commit the content of that directory and both `package.json` and `package-lock.json`.
-
-## How to set up a new project from this template
-
-You need to:
-
-* Change the Go module path to your module path in `go.mod`, `go.sum`, and in `*.go` files around the project
-* Rewrite the API documentation `doc/api.yaml`
-* If no web frontend is expected, remove `webui` and `cmd/webapi/register-webui.go`
-* If no cronjobs or health checks are needed, remove them from `cmd/`
-* Update top/package comment inside `cmd/webapi/main.go` to reflect the actual project usage, goal, and general info
-* Update the code in `run()` function (`cmd/webapi/main.go`) to connect to databases or external resources
-* Write API code inside `service/api`, and create any further package inside `service/` (or subdirectories)
-
-## How to build
-
-If you're not using the WebUI, or if you don't want to embed the WebUI into the final executable, then:
-
-```shell
-go build ./cmd/webapi/
-```
-
-If you're using the WebUI and you want to embed it into the final executable:
-
-```shell
-./open-npm.sh
-# (here you're inside the NPM container)
-npm run build-embed
-exit
-# (outside the NPM container)
-go build -tags webui ./cmd/webapi/
-```
-
-## How to run (in development mode)
-
-You can launch the backend only using:
-
-```shell
-go run ./cmd/webapi/
-```
-
-If you want to launch the WebUI, open a new tab and launch:
-
-```shell
-./open-npm.sh
-# (here you're inside the NPM container)
-npm run dev
-```
-
-## How to build for production / homework delivery
-
-```shell
-./open-npm.sh
-# (here you're inside the NPM container)
-npm run build-prod
-```
-
-For "Web and Software Architecture" students: before committing and pushing your work for grading, please read the section below named "My build works when I use `npm run dev`, however there is a Javascript crash in production/grading"
-
-## Known issues
-
-### Apple M1 / ARM: `failed to load config from`...
-
-If you use Apple M1/M2 hardware, or other ARM CPUs, you may encounter an error message saying that `esbuild` (or some other tool) has been built for another platform.
-
-If so, you can fix issuing these commands **only the first time**:
-
-```shell
-./open-npm.sh
-# (here you're inside the NPM container)
-npm install
-exit
-# Now you can continue as indicated in "How to build/run"
-```
-
-**Use these instructions only if you get an error. Do not use it if your build is OK**.
-
-### My build works when I use `npm run dev`, however there is a Javascript crash in production/grading
-
-Some errors in the code are somehow not shown in `vite` development mode. To preview the code that will be used in production/grading settings, use the following commands:
-
-```shell
-./open-npm.sh
-# (here you're inside the NPM container)
-npm run build-prod
-npm run preview
-```
-
-## License
-
-See [LICENSE](LICENSE).
+![Focus on post](screenshots/Post.png "Focus on a given post")
